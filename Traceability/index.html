@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>身份证模拟号生成器</title>
+
+    <!-- Element Plus CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 300;
+        }
+
+        .controls {
+            padding: 15px;
+            background: #fafbfc;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            min-width: 100px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .area-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .area-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .area-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .area-code-display {
+            padding: 8px 12px;
+            background: #e8f4f8;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2c5aa0;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .reset-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .number-input {
+            width: 80px;
+            text-align: center;
+        }
+
+        .date-input {
+            width: 140px;
+        }
+
+        .gender-select {
+            width: 80px;
+        }
+
+        /* 日期面板样式 */
+        .date-panel-container {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .date-panel-wrapper {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .date-panel-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .date-panel {
+            width: 280px;
+            font-size: 12px;
+        }
+
+        .date-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 0 8px;
+        }
+
+        .date-nav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .date-nav-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .date-title {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .date-cell {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .date-cell.header {
+            background: #f5f7fa;
+            color: #666;
+            cursor: default;
+            font-weight: 500;
+        }
+
+        .date-cell.other-month {
+            color: #ccc;
+        }
+
+        .date-cell:not(.header):not(.other-month):hover {
+            background: #e6f2ff;
+        }
+
+        .date-cell.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .date-cell.today {
+            background: #ffe6e6;
+            color: #e53e3e;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5568;
+            transform: translateY(-1px);
+        }
+
+        .results-container {
+            display: flex;
+            height: 520px;
+            min-height: 520px;
+        }
+
+        .result-panel {
+            flex: 1;
+            border-right: 1px solid #e1e8ed;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-panel:last-child {
+            border-right: none;
+        }
+
+        .panel-header {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e8ed;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            color: #333;
+        }
+
+        .panel-count {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 6px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.3;
+            background: #fafafa;
+        }
+
+        .id-line {
+            padding: 2px 4px;
+            margin-bottom: 1px;
+            border-radius: 2px;
+        }
+
+        .id-line.valid {
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+        }
+
+        .message.show {
+            transform: translateX(0);
+        }
+
+        .message.warning {
+            background: #f6ad55;
+        }
+
+        .message.success {
+            background: #48bb78;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .control-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .area-selector {
+                width: 100%;
+            }
+
+            .area-select {
+                flex: 1;
+                min-width: 100px;
+            }
+
+            .date-panel-container {
+                flex-direction: column;
+            }
+
+            .results-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .result-panel {
+                border-right: none;
+                border-bottom: 1px solid #e1e8ed;
+                height: 250px;
+            }
+
+            .result-panel:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h2>身份证模拟号生成器（测试数据）</h2>
+            </div>
+
+            <div
+                style="margin: 0; padding: 10px; border: 1px solid #ffd700; border-radius: 4px; background-color: #fff8dc; font-size: 12px; color: #8b7d5b; text-align: center;">
+                ⚠️ 免责声明：本工具仅供学习研究使用，生成的数据无效力，使用风险自负，作者不承担任何责任。
+            </div>
+
+            <div class="controls">
+                <!-- 地区选择 -->
+                <div class="control-row">
+                    <span class="control-label">选择地区：</span>
+                    <div class="area-selector">
+                        <select id="provinceSelect" class="area-select">
+                            <option value="">加载中...</option>
+                        </select>
+                        <select id="citySelect" class="area-select">
+                            <option value="">请选择城市</option>
+                        </select>
+                        <select id="districtSelect" class="area-select">
+                            <option value="">全部区县</option>
+                        </select>
+                        <div class="area-code-display" id="areaCodeDisplay">000000</div>
+                        <button class="reset-btn" onclick="resetArea()">重置</button>
+                    </div>
+                </div>
+
+                <!-- 日期范围 -->
+                <div class="control-row">
+                    <span class="control-label">出生日期：</span>
+                    <el-date-picker v-model="startDate" type="date" placeholder="开始日期"
+                        style="width:160px"></el-date-picker>
+                    <span>至</span>
+                    <el-date-picker v-model="endDate" type="date" placeholder="结束日期"
+                        style="width:160px"></el-date-picker>
+                </div>
+
+                <!-- 性别 -->
+                <div class="control-row">
+                    <span class="control-label">性别：</span>
+                    <select id="gender" class="form-input gender-select">
+                        <option value="m">男</option>
+                        <option value="f">女</option>
+                    </select>
+                </div>
+
+                <!-- 顺序号 -->
+                <div class="control-row">
+                    <span class="control-label">顺序号范围：</span>
+                    <input type="text" id="sequenceNumbers" class="form-input"
+                        placeholder="默认 1-15，可填1-3，5、7" style="width: 300px;">
+                </div>
+
+                <!-- 校验位 -->
+                <div class="control-row">
+                    <span class="control-label">校验位：</span>
+                    <input type="text" id="lastDigitInput" class="form-input" placeholder="默认 1-X，可填：2、3 7"
+                        style="width: 300px;">
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="generateIds()">生成全部</button>
+                    <button class="btn btn-success" onclick="verifyIds()">仅保留合法</button>
+                    <button class="btn btn-secondary" onclick="downloadValidIds()">导出合法列表</button>
+                </div>
+            </div>
+
+            <div class="results-container">
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">全部生成的号码</span>
+                        <span class="panel-count" id="allCount">0</span>
+                    </div>
+                    <div class="panel-content" id="allResults"></div>
+                </div>
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">校验后合法号码</span>
+                        <span class="panel-count" id="validCount">0</span>
+                    </div>
+                    <div class="panel-content" id="validResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let areaData = {};
+
+            document.addEventListener('DOMContentLoaded', function () {
+                loadAreaData();
+            });
+
+            // 从本地 data.json 加载数据
+            async function loadAreaData() {
+                try {
+                    const response = await fetch('data.json');
+                    if (!response.ok) throw new Error('本地 data.json 加载失败');
+                    const data = await response.json();
+                    areaData = data;
+                    initializeAreaSelectors();
+                } catch (err) {
+                    console.error('加载地区数据失败:', err);
+                    showMessage('地区数据加载失败，请确认 data.json 文件存在');
+                }
+            }
+
+            function initializeAreaSelectors() {
+                const provinceSelect = document.getElementById('provinceSelect');
+                const citySelect = document.getElementById('citySelect');
+                const districtSelect = document.getElementById('districtSelect');
+
+                // 填充省份
+                provinceSelect.innerHTML = '<option value="">请选择省份</option>';
+                areaData.forEach(province => {
+                    const option = document.createElement('option');
+                    option.value = province.code;
+                    option.textContent = province.name;
+                    provinceSelect.appendChild(option);
+                });
+
+                // 省份变化
+                provinceSelect.addEventListener('change', function () {
+                    const selectedProvince = areaData.find(p => p.code === this.value);
+                    citySelect.innerHTML = '<option value="">请选择城市</option>';
+                    districtSelect.innerHTML = '<option value="">全部区县</option>';
+                    updateAreaCode();
+
+                    if (selectedProvince && selectedProvince.children) {
+                        // 检查是否是直辖市（判断第一个子节点是否有children属性）
+                        const isDirectAdminCity = selectedProvince.children.length > 0 && !selectedProvince.children[0].children;
+
+                        if (isDirectAdminCity) {
+                            // 直辖市特殊处理：显示"XX市"作为城市选项
+                            const cityOption = document.createElement('option');
+                            cityOption.value = selectedProvince.code.substring(0, 4) + '00'; // 构造城市代码
+                            cityOption.textContent = selectedProvince.name;
+                            citySelect.appendChild(cityOption);
+                            citySelect.value = cityOption.value;
+
+                            // 触发城市选择事件，加载区县
+                            const event = new Event('change');
+                            citySelect.dispatchEvent(event);
+                        } else {
+                            // 非直辖市，正常显示城市列表
+                            selectedProvince.children.forEach(city => {
+                                const option = document.createElement('option');
+                                option.value = city.code;
+                                option.textContent = city.name;
+                                citySelect.appendChild(option);
+                            });
+                        }
+                    }
+                });
+
+                // 城市变化
+                citySelect.addEventListener('change', function () {
+                    const provinceCode = document.getElementById('provinceSelect').value.slice(0, 2);
+                    const selectedProvince = areaData.find(p => p.code.startsWith(provinceCode));
+
+                    districtSelect.innerHTML = '<option value="">全部区县</option>';
+                    updateAreaCode();
+
+                    if (selectedProvince && selectedProvince.children) {
+                        // 检查是否是直辖市的情况
+                        const isDirectAdminCity = selectedProvince.children.length > 0 && !selectedProvince.children[0].children;
+
+                        if (isDirectAdminCity) {
+                            // 直辖市，显示区县列表
+                            selectedProvince.children.forEach(district => {
+                                const option = document.createElement('option');
+                                option.value = district.code;
+                                option.textContent = district.name;
+                                districtSelect.appendChild(option);
+                            });
+                        } else {
+                            // 非直辖市，查找选中的城市，然后显示其下的区县
+                            const selectedCity = selectedProvince.children.find(c => c.code === this.value);
+                            if (selectedCity && selectedCity.children) {
+                                selectedCity.children.forEach(district => {
+                                    const option = document.createElement('option');
+                                    option.value = district.code;
+                                    option.textContent = district.name;
+                                    districtSelect.appendChild(option);
+                                });
+                            }
+                        }
+                    }
+                });
+
+                // 区县变化
+                districtSelect.addEventListener('change', updateAreaCode);
+            }
+
+            function updateAreaCode() {
+                const province = document.getElementById('provinceSelect').value;
+                const city = document.getElementById('citySelect').value;
+                const district = document.getElementById('districtSelect').value;
+                const display = document.getElementById('areaCodeDisplay');
+
+                if (district) {
+                    display.textContent = district;
+                } else if (city) {
+                    display.textContent = city;
+                } else if (province) {
+                    display.textContent = province;
+                } else {
+                    display.textContent = '000000';
+                }
+            }
+
+            function resetArea() {
+                document.getElementById('provinceSelect').value = '';
+                document.getElementById('citySelect').innerHTML = '<option value="">请选择城市</option>';
+                document.getElementById('districtSelect').innerHTML = '<option value="">全部区县</option>';
+                document.getElementById('areaCodeDisplay').textContent = '000000';
+            }
+
+
+
+            // 显示消息
+            function showMessage(text, type = 'warning') {
+                const message = document.createElement('div');
+                message.className = `message ${type}`;
+                message.textContent = text;
+                document.body.appendChild(message);
+
+                setTimeout(() => message.classList.add('show'), 10);
+                setTimeout(() => {
+                    message.classList.remove('show');
+                    setTimeout(() => document.body.removeChild(message), 300);
+                }, 3000);
+            }
+
+            // 生成日期范围
+            function dateRange(startDate, endDate) {
+                const dates = [];
+                const current = new Date(startDate);
+                const end = new Date(endDate);
+
+                while (current <= end) {
+                    const year = current.getFullYear();
+                    const month = String(current.getMonth() + 1).padStart(2, '0');
+                    const day = String(current.getDate()).padStart(2, '0');
+                    dates.push(year + month + day);
+                    current.setDate(current.getDate() + 1);
+                }
+                return dates;
+            }
+
+            // 计算校验码
+            function calculateChecksum(id17) {
+                const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+                const checksums = '10X98765432';
+
+                const sum = id17.split('').reduce((total, digit, index) => {
+                    return total + parseInt(digit, 10) * weights[index];
+                }, 0);
+
+                return checksums[sum % 11];
+            }
+
+            // 解析校验位输入
+            function parseLastDigits() {
+                const input = document.getElementById('lastDigitInput').value.trim();
+                if (!input) {
+                    return ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'X'];
+                }
+
+                return input
+                    .replace(/[，、]/g, ' ')
+                    .split(/\s+/)
+                    .map(s => s.trim().toUpperCase())
+                    .filter(s => s.length > 0);
+            }
+
+            // 解析顺序号范围输入
+            function parseSequenceNumbers() {
+                const input = document.getElementById('sequenceNumbers').value.trim();
+                const sequenceNumbers = [];
+
+                // 默认范围 1-15
+                if (!input) {
+                    for (let i = 1; i <= 15; i++) {
+                        sequenceNumbers.push(i);
+                    }
+                    return sequenceNumbers;
+                }
+
+                // 处理输入格式，支持: 1-10, 15 或 1-5,8,10-15 等格式
+                const parts = input
+                    .replace(/[，、]/g, ',') // 将中文逗号和顿号替换为英文逗号
+                    .split(',') // 按逗号分割
+                    .map(part => part.trim()) // 去空格
+                    .filter(part => part.length > 0); // 过滤空字符串
+
+                // 处理每个部分
+                parts.forEach(part => {
+                    if (part.includes('-')) {
+                        // 处理范围，如 1-10
+                        const [start, end] = part.split('-').map(num => parseInt(num));
+                        if (!isNaN(start) && !isNaN(end)) {
+                            const min = Math.min(start, end);
+                            const max = Math.max(start, end);
+                            // 限制范围在1-99之间
+                            const actualMin = Math.max(1, min);
+                            const actualMax = Math.min(99, max);
+
+                            for (let i = actualMin; i <= actualMax; i++) {
+                                sequenceNumbers.push(i);
+                            }
+                        }
+                    } else {
+                        // 处理单个数字，如 15
+                        const num = parseInt(part);
+                        if (!isNaN(num) && num >= 1 && num <= 99) {
+                            sequenceNumbers.push(num);
+                        }
+                    }
+                });
+
+                // 去重并排序
+                return [...new Set(sequenceNumbers)].sort((a, b) => a - b);
+            }
+
+            // 获取所有可能的地区码
+            function getAreaCodes() {
+                const province = document.getElementById('provinceSelect').value;
+                const city = document.getElementById('citySelect').value;
+                const district = document.getElementById('districtSelect').value;
+                const areaCodes = [];
+
+                if (!province) {
+                    return [];
+                }
+
+                // 查找选中的省份
+                const selectedProvince = areaData.find(p => p.code === province);
+                if (!selectedProvince || !selectedProvince.children) {
+                    return [];
+                }
+
+                // 检查是否是直辖市
+                const isDirectAdminCity = selectedProvince.children.length > 0 && !selectedProvince.children[0].children;
+
+                if (district && district !== '') {
+                    // 选择了区县，直接添加区县代码
+                    areaCodes.push(district);
+                } else if (city && city !== '') {
+                    if (isDirectAdminCity) {
+                        // 直辖市情况下，选择了城市但未选择区县，返回所有区县代码
+                        selectedProvince.children.forEach(district => {
+                            areaCodes.push(district.code);
+                        });
+                    } else {
+                        // 非直辖市情况下，选择了城市但未选择区县，返回该城市下所有区县代码
+                        const selectedCity = selectedProvince.children.find(c => c.code === city);
+                        if (selectedCity && selectedCity.children) {
+                            selectedCity.children.forEach(district => {
+                                areaCodes.push(district.code);
+                            });
+                        }
+                    }
+                } else {
+                    // 未选择城市/区县
+                    if (isDirectAdminCity) {
+                        // 直辖市，返回所有区县代码
+                        selectedProvince.children.forEach(district => {
+                            areaCodes.push(district.code);
+                        });
+                    } else {
+                        // 非直辖市，返回所有城市下的所有区县代码
+                        selectedProvince.children.forEach(city => {
+                            if (city.children) {
+                                city.children.forEach(district => {
+                                    areaCodes.push(district.code);
+                                });
+                            }
+                        });
+                    }
+                }
+
+                return areaCodes;
+            }
+
+            // 生成身份证号
+            function generateIds() {
+                // 获取日期值（使用优化的全局变量访问）
+                let startDate, endDate;
+                try {
+                    // 检查全局日期对象是否存在
+                    if (!window.vueStartDate || typeof window.vueStartDate !== 'object' ||
+                        !window.vueEndDate || typeof window.vueEndDate !== 'object') {
+                        throw new Error('日期选择器对象未初始化');
+                    }
+
+                    // 获取日期值
+                    startDate = window.vueStartDate.value;
+                    endDate = window.vueEndDate.value;
+
+                    // 检查日期值是否有效
+                    if (!startDate || !(startDate instanceof Date) || isNaN(startDate.getTime()) ||
+                        !endDate || !(endDate instanceof Date) || isNaN(endDate.getTime())) {
+                        throw new Error('日期值无效');
+                    }
+                } catch (error) {
+                    console.error('获取日期值失败:', error);
+                    showMessage('日期选择器出现问题：' + error.message + '，请尝试刷新页面');
+                    return;
+                }
+
+                // 获取地区码
+                const areaCodes = getAreaCodes();
+                if (areaCodes.length === 0) {
+                    showMessage('请选择完整的地区信息（至少选择到城市）');
+                    return;
+                }
+
+                // 检查日期范围
+                if (startDate > endDate) {
+                    showMessage('开始日期不能晚于结束日期');
+                    return;
+                }
+
+                // 检查日期范围是否合理（不超过100年）
+                const maxAge = 100;
+                const minDate = new Date();
+                minDate.setFullYear(minDate.getFullYear() - maxAge);
+
+                if (startDate < minDate) {
+                    showMessage(`开始日期不能早于${maxAge}年前`);
+                    return;
+                }
+
+                // 检查日期范围跨度是否合理（不超过20年）
+                const maxYearsSpan = 20;
+                const spanYears = endDate.getFullYear() - startDate.getFullYear();
+
+                if (spanYears > maxYearsSpan) {
+                    showMessage(`日期范围跨度不能超过${maxYearsSpan}年`);
+                    return;
+                }
+
+                // 获取顺序号范围
+                const sequenceNumbers = parseSequenceNumbers();
+                if (sequenceNumbers.length === 0) {
+                    showMessage('顺序号格式错误，请输入有效的数字或范围');
+                    return;
+                }
+
+                // 获取性别和校验位
+                const gender = document.getElementById('gender').value;
+                const genderBits = gender === 'm' ? [1, 3, 5, 7, 9] : [0, 2, 4, 6, 8];
+                const lastDigits = parseLastDigits();
+
+                // 生成日期数组
+                const birthDates = dateRange(startDate, endDate);
+
+                // 预估生成数量
+                const estimatedCount = areaCodes.length * birthDates.length *
+                    sequenceNumbers.length * genderBits.length * lastDigits.length;
+
+                // 设置最大生成数量限制，防止浏览器崩溃
+                // const MAX_GENERATE_COUNT = 100000;
+
+                // if (estimatedCount > MAX_GENERATE_COUNT) {
+                //     showMessage(`预计生成数量过大（${estimatedCount}个），请缩小选择范围`, 'warning');
+                //     return;
+                // }
+
+                // 生成所有身份证号 - 优化循环性能
+                const results = [];
+                results.length = estimatedCount; // 预分配数组空间
+                let index = 0;
+
+                // 优化的多层循环
+                for (let i = 0; i < areaCodes.length; i++) {
+                    const areaCode = areaCodes[i];
+
+                    for (let j = 0; j < birthDates.length; j++) {
+                        const birthDate = birthDates[j];
+
+                        for (let m = 0; m < sequenceNumbers.length; m++) {
+                            const seq = sequenceNumbers[m];
+                            const seqStr = String(seq).padStart(2, '0');
+
+                            for (let k = 0; k < genderBits.length; k++) {
+                                const genderBit = genderBits[k];
+
+                                for (let l = 0; l < lastDigits.length; l++) {
+                                    const lastDigit = lastDigits[l];
+                                    results[index++] = `${areaCode}${birthDate}${seqStr}${genderBit}${lastDigit}`;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                allResults = results;
+
+                // 对于大量数据，使用分批渲染提升性能
+                if (results.length > 5000) {
+                    showMessage(`正在渲染${results.length}个号码，请稍候...`, 'success');
+                    setTimeout(() => {
+                        displayAllResultsBatch();
+                        clearValidResults();
+
+                        const districtInfo = areaCodes.length > 1 ? `（包含 ${areaCodes.length} 个区县）` : '';
+                        showMessage(`生成完成，共 ${results.length} 个号码${districtInfo}`, 'success');
+                    }, 10);
+                } else {
+                    displayAllResults();
+                    clearValidResults();
+
+                    const districtInfo = areaCodes.length > 1 ? `（包含 ${areaCodes.length} 个区县）` : '';
+                    showMessage(`生成完成，共 ${results.length} 个号码${districtInfo}`, 'success');
+                }
+            }
+
+            // 验证身份证号
+            function verifyIds() {
+                if (allResults.length === 0) {
+                    showMessage('暂无数据，请先生成');
+                    return;
+                }
+
+                const validIds = allResults.filter(id => {
+                    if (id.length !== 18) return false;
+                    const calculatedChecksum = calculateChecksum(id.slice(0, 17));
+                    return calculatedChecksum === id[17];
+                });
+
+                validResults = validIds;
+                displayValidResults();
+                highlightValidInAll();
+                showMessage(`校验完成，找到 ${validIds.length} 个合法号码`, 'success');
+            }
+
+            // 显示全部结果 - 适用于一般数量的数据
+            function displayAllResults() {
+                const container = document.getElementById('allResults');
+                const countElement = document.getElementById('allCount');
+
+                container.innerHTML = '';
+                allResults.forEach(id => {
+                    const div = document.createElement('div');
+                    div.className = 'id-line';
+                    div.textContent = id;
+                    container.appendChild(div);
+                });
+
+                countElement.textContent = allResults.length;
+            }
+
+            // 显示全部结果 - 分批渲染版，适用于大量数据
+            function displayAllResultsBatch() {
+                const container = document.getElementById('allResults');
+                const countElement = document.getElementById('allCount');
+
+                // 清空容器
+                container.innerHTML = '';
+
+                // 设置分批渲染参数
+                const BATCH_SIZE = 1000; // 每批渲染的数量
+                const TOTAL_BATCHES = Math.ceil(allResults.length / BATCH_SIZE);
+                let currentBatch = 0;
+
+                // 创建文档片段，减少DOM操作
+                const renderBatch = () => {
+                    if (currentBatch >= TOTAL_BATCHES) {
+                        countElement.textContent = allResults.length;
+                        return;
+                    }
+
+                    const fragment = document.createDocumentFragment();
+                    const startIdx = currentBatch * BATCH_SIZE;
+                    const endIdx = Math.min(startIdx + BATCH_SIZE, allResults.length);
+
+                    // 添加当前批次的元素到文档片段
+                    for (let i = startIdx; i < endIdx; i++) {
+                        const div = document.createElement('div');
+                        div.className = 'id-line';
+                        div.textContent = allResults[i];
+                        fragment.appendChild(div);
+                    }
+
+                    // 将文档片段一次性添加到DOM
+                    container.appendChild(fragment);
+
+                    // 更新计数显示
+                    countElement.textContent = endIdx;
+
+                    // 渲染下一批
+                    currentBatch++;
+                    requestAnimationFrame(renderBatch);
+                };
+
+                // 开始分批渲染
+                renderBatch();
+            }
+
+            // 显示合法结果
+            function displayValidResults() {
+                const container = document.getElementById('validResults');
+                const countElement = document.getElementById('validCount');
+
+                container.innerHTML = '';
+                validResults.forEach(id => {
+                    const div = document.createElement('div');
+                    div.className = 'id-line';
+                    div.textContent = id;
+                    container.appendChild(div);
+                });
+
+                countElement.textContent = validResults.length;
+            }
+
+            // 清空合法结果显示
+            function clearValidResults() {
+                document.getElementById('validResults').innerHTML = '';
+                document.getElementById('validCount').textContent = '0';
+                // 移除左侧的高亮
+                const allLines = document.querySelectorAll('#allResults .id-line');
+                allLines.forEach(line => line.classList.remove('valid'));
+            }
+
+            // 在全部结果中高亮合法的
+            function highlightValidInAll() {
+                const validSet = new Set(validResults);
+                const allLines = document.querySelectorAll('#allResults .id-line');
+
+                allLines.forEach(line => {
+                    if (validSet.has(line.textContent)) {
+                        line.classList.add('valid');
+                    } else {
+                        line.classList.remove('valid');
+                    }
+                });
+            }
+
+            // 下载合法身份证号列表
+            function downloadValidIds() {
+                if (validResults.length === 0) {
+                    showMessage('暂无合法数据');
+                    return;
+                }
+
+                const content = validResults.join('\n');
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'valid_ids.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showMessage('导出成功', 'success');
+            }
+        </script>
+
+        <script>
+            /* ---------- Vue/Ele 日期选择器实现 ---------- */
+            try {
+                const { createApp, ref, watch } = Vue;
+
+                // 创建Vue应用
+                const app = createApp({
+                    setup() {
+                        const today = new Date();
+                        // 设置默认日期范围（20-50岁） - 更合理的默认范围，减少生成数量
+                        const startDate = ref(new Date(today.getFullYear() - 20, today.getMonth(), today.getDate()));
+                        const endDate = ref(new Date(today.getFullYear() - 10, today.getMonth(), today.getDate()));
+
+                        // 将日期值绑定到window对象，便于其他脚本访问
+                        window.vueStartDate = startDate;
+                        window.vueEndDate = endDate;
+
+                        // 监听日期变化，可用于调试或添加额外逻辑
+                        watch([startDate, endDate], ([newStart, newEnd]) => {
+                            console.log('日期范围已更新:', {
+                                start: newStart ? newStart.toISOString().split('T')[0] : '未设置',
+                                end: newEnd ? newEnd.toISOString().split('T')[0] : '未设置'
+                            });
+                        });
+
+                        return { startDate, endDate };
+                    }
+                });
+
+                // 使用Element Plus插件并挂载到#app元素
+                app.use(ElementPlus).mount('#app');
+
+                console.log('Vue日期选择器初始化成功');
+            } catch (error) {
+                console.error('Vue日期选择器初始化失败:', error);
+
+                // 初始化备用的日期对象，确保即使Vue初始化失败，页面功能也能基本运行
+                const today = new Date();
+                window.vueStartDate = {
+                    value: new Date(today.getFullYear() - 50, today.getMonth(), today.getDate()) // 20-50岁范围
+                };
+                window.vueEndDate = {
+                    value: new Date(today.getFullYear() - 20, today.getMonth(), today.getDate()) // 20-50岁范围
+                };
+            }
+        </script>
+
+</body>
+
+</html>
