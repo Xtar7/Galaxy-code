@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EZ指纹规则生成器</title>
+    <link rel="icon" href="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/ingress.svg"
+        type="image/svg+xml">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .form-container {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .result-container {
+            flex: 1;
+            min-width: 300px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            color: #2c3e50;
+        }
+        
+        .result-container h2 {
+            color: #ecf0f1;
+            border-bottom: 2px solid #1abc9c;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        
+        .keyword-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .keyword-input input {
+            flex: 1;
+        }
+        
+        .add-keyword {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .add-keyword:hover {
+            background: #2980b9;
+        }
+        
+        .keyword-list {
+            margin-top: 10px;
+        }
+        
+        .keyword-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .remove-keyword {
+            color: #e74c3c;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #34495e;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: #1abc9c;
+        }
+        
+        .keyword-section {
+            display: none;
+        }
+        
+        .keyword-section.active {
+            display: block;
+        }
+        
+        #generateBtn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        #generateBtn:hover {
+            background: #27ae60;
+        }
+        
+        #jsonOutput {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        
+        .copy-btn {
+            background: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            align-self: flex-end;
+            transition: background 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: #16a085;
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #40fcf2;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #76bc47;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+<input type="hidden" id="_o_dbjbempljhcmhlfpfacalomonjpalpko" data-inspect-config="7"><script type="text/javascript" src="chrome-extension://odphnbhiddhdpoccbialllejaajemdio/scripts/inspector.js"></script><link id="fl-highlights-css" rel="stylesheet" type="text/css" href="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/fl-highlights.css">
+<style>
+#clip_copy,#web-copy-btn-wk{
+   background:#54aae9 !important
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EZ指纹规则生成器</h1>
+            <p class="description">根据PoC插件需求，一键生成指纹规则JSON数据</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="form-container">
+                <h2>填写指纹信息</h2>
+                
+                <div class="form-group">
+                    <label for="product_name">指纹名称 (product_name)*</label>
+                    <input type="text" id="product_name" placeholder="例如：kingdee-eas">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company">组件生产厂商 (company)</label>
+                    <input type="text" id="company" placeholder="例如：金蝶">
+                </div>
+                
+                <div class="form-group">
+                    <label for="industry">行业分类 (industry)</label>
+                    <input type="text" id="industry" placeholder="例如：金融、医疗、教育等">
+                </div>
+                
+                <div class="form-group">
+                    <label for="level">风险等级 (level)*</label>
+                    <select id="level">
+                        <option value="1">1 - 低危</option>
+                        <option value="2">2 - 中危</option>
+                        <option value="3">3 - 高危</option>
+                        <option value="4">4 - 严重</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>匹配规则 (rules)*</label>
+                    
+                    <div class="tabs">
+                        <div class="tab active" data-tab="body">Body规则</div>
+                        <div class="tab" data-tab="header">Header规则</div>
+                    </div>
+                    
+                    <div class="keyword-section active" id="body-section">
+                        <div class="keyword-input">
+                            <input type="text" id="bodyKeyword" placeholder="输入Body中的关键词">
+                            <button class="add-keyword" data-type="body">添加</button>
+                        </div>
+                        <div class="keyword-list" id="bodyKeywords"></div>
+                    </div>
+                    
+                    <div class="keyword-section" id="header-section">
+                        <div class="keyword-input">
+                            <input type="text" id="headerKeyword" placeholder="输入Header中的关键词">
+                            <button class="add-keyword" data-type="header">添加</button>
+                        </div>
+                        <div class="keyword-list" id="headerKeywords"></div>
+                    </div>
+                </div>
+                
+                <button id="generateBtn">生成指纹规则</button>
+            </div>
+            
+            <div class="result-container">
+                <h2>生成的JSON</h2>
+                <div id="jsonOutput">{
+  "product_name": "",
+  "company": "",
+  "industry": "",
+  "level": 2,
+  "rules": {
+    "body": [],
+    "header": []
+  }
+}</div>
+                <button class="copy-btn" id="copyBtn">复制到剪贴板</button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li><strong>指纹名称</strong>: 对应于PoC插件中finger字段指定的名称，若EZ已有同类产品指纹，名称尽可能与原有名称保持一致</li>
+                <li><strong>组件生产厂商</strong>: 要求填写准确，若不清楚可不填写</li>
+                <li><strong>行业分类</strong>: 要求填写准确，若不清楚可不填写</li>
+                <li><strong>风险等级</strong>: 参考PoC的风险等级设定，从1(低危)到4(严重)</li>
+                <li><strong>匹配规则</strong>: 支持Body和Header两种类型的关键词匹配，多个关键词使用AND关系匹配</li>
+                <li>填写完成后点击"生成指纹规则"按钮，然后可以复制生成的JSON数据</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const keywordSections = document.querySelectorAll('.keyword-section');
+            const addKeywordButtons = document.querySelectorAll('.add-keyword');
+            const generateBtn = document.getElementById('generateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            const bodyKeywords = [];
+            const headerKeywords = [];
+            
+            // 切换标签
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    // 更新标签状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // 更新内容区域
+                    keywordSections.forEach(section => {
+                        section.classList.remove('active');
+                        if (section.id === `${tabName}-section`) {
+                            section.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // 添加关键词
+            addKeywordButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const type = button.getAttribute('data-type');
+                    const input = document.getElementById(`${type}Keyword`);
+                    const keyword = input.value.trim();
+                    
+                    if (keyword) {
+                        if (type === 'body') {
+                            bodyKeywords.push(keyword);
+                            updateKeywordList('body', bodyKeywords);
+                        } else {
+                            headerKeywords.push(keyword);
+                            updateKeywordList('header', headerKeywords);
+                        }
+                        
+                        input.value = '';
+                    }
+                });
+            });
+            
+            // 更新关键词列表
+            function updateKeywordList(type, keywords) {
+                const list = document.getElementById(`${type}Keywords`);
+                list.innerHTML = '';
+                
+                keywords.forEach((keyword, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'keyword-item';
+                    item.innerHTML = `
+                        <span>${keyword}</span>
+                        <span class="remove-keyword" data-type="${type}" data-index="${index}">×</span>
+                    `;
+                    list.appendChild(item);
+                });
+                
+                // 添加删除事件
+                document.querySelectorAll('.remove-keyword').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const type = this.getAttribute('data-type');
+                        const index = parseInt(this.getAttribute('data-index'));
+                        
+                        if (type === 'body') {
+                            bodyKeywords.splice(index, 1);
+                            updateKeywordList('body', bodyKeywords);
+                        } else {
+                            headerKeywords.splice(index, 1);
+                            updateKeywordList('header', headerKeywords);
+                        }
+                    });
+                });
+            }
+            
+            // 生成JSON
+            generateBtn.addEventListener('click', () => {
+                const productName = document.getElementById('product_name').value.trim();
+                const company = document.getElementById('company').value.trim();
+                const industry = document.getElementById('industry').value.trim();
+                const level = parseInt(document.getElementById('level').value);
+                
+                if (!productName) {
+                    alert('请填写指纹名称');
+                    return;
+                }
+                
+                if (bodyKeywords.length === 0 && headerKeywords.length === 0) {
+                    alert('请至少添加一个Body或Header关键词');
+                    return;
+                }
+                
+                const rules = {};
+                
+                if (bodyKeywords.length > 0) {
+                    rules.body = bodyKeywords;
+                }
+                
+                if (headerKeywords.length > 0) {
+                    rules.header = headerKeywords;
+                }
+                
+                const result = {
+                    product_name: productName,
+                    company: company || undefined,
+                    industry: industry || undefined,
+                    level: level,
+                    rules: rules
+                };
+                
+                // 美化JSON输出
+                document.getElementById('jsonOutput').textContent = JSON.stringify([result], null, 2);
+            });
+            
+            // 复制到剪贴板
+            copyBtn.addEventListener('click', () => {
+                const output = document.getElementById('jsonOutput');
+                const range = document.createRange();
+                range.selectNode(output);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                
+                alert('已复制到剪贴板！');
+            });
+        });
+    </script>
+<script defer="" src="./指纹规则生成器_files/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;0936f1d47e9448efbff5b83d1d8c0bf8&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+<fl-div id="fl-menu-container" class="fl-menu-container">
+ <fl-div style="font-size: 10px;font-weight: bold; color: #6f96e3; text-align: center;">
+    <a style="text-decoration-line: none" href="https://kjeek.com/2024/11/03/ext-upgrade/" target="_blank">11.5.0</a>
+  </fl-div>
+ <fl-div><img id="menu-guide" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/guide.png"></fl-div>
+ 
+ <fl-div class="divider-h"></fl-div>
+ <fl-div><img id="menu-z" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/z.png"></fl-div>
+ <img id="menu-read" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/books.png">
+ <fl-div class="fl-menu-cell" style="border-left: 1px solid"><img id="menu-note" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-note.png"></fl-div>
+ <fl-div class="fl-menu-cell"><img id="menu-video-notes" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/video-notes.png"></fl-div>
+ <fl-div class="fl-menu-cell"><img id="menu-video-ai" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/video-ai.png"></fl-div>
+ <fl-div class="fl-menu-cell" style="border-left: 1px solid"><img id="menu-bmk-mng" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/bmk-mng.png"></fl-div>
+ <fl-div class="divider-h"></fl-div>
+ <fl-div class="fl-menu-cell" style="border-left: 1px solid"><img id="menu-trans-ch" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-trans-ch.png"></fl-div>
+ <fl-div><img id="menu-outline" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/outline.png"></fl-div>
+ <fl-div><img id="menu-page-high" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-page-high.png"></fl-div>
+ <fl-div><img id="menu-page-link" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/links.png"></fl-div>
+
+ <fl-div class="fl-menu-cell" style="border-left: 1px solid"><img id="menu-page-imgs" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-page-imgs.png"></fl-div>
+ <fl-div><img id="menu-v2p" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-v2p.png"></fl-div>
+ 
+ <fl-div class="divider-h"></fl-div>
+ <fl-div style="border-left: 1px solid"><img id="menu-tabs" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs.png"></fl-div>
+ 
+ <fl-div class="divider-h"></fl-div>
+ <fl-div><img id="menu-setting" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-setting.png"></fl-div>
+ <fl-div><img id="menu-disable" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-disabled.png"></fl-div>
+ <fl-div><img id="menu-close" class="fl-menu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-close.png"></fl-div>
+</fl-div><fl-div id="bmk-submenu" class="fl-submenu-container" style="top: 180px">
+       <img id="menu-bmk-search" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-bmk-search.png">
+       <img id="menu-bmk-add" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-bmk-add.png">
+       <fl-div class="divider-v"></fl-div>
+       <img id="menu-bmk-loc" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-bmk-loc.png">
+       <img id="menu-bmk-open" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-bmk-open.png">
+    </fl-div><fl-div id="note-submenu" class="fl-submenu-container" style="top: 297px">
+       <img id="menu-note-search" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-note-search.png">
+    </fl-div><fl-div id="trans-submenu" class="fl-submenu-container" style="top: 297px">
+       <img id="menu-trans-en" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-trans-en.png">
+    </fl-div><fl-div id="imgs-submenu" class="fl-submenu-container" style="top: 330px">
+       <img id="menu-page-imgs-pin" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/preview.png">
+    </fl-div><fl-div id="tabs-submenu" class="fl-submenu-container" style="top: 415px">
+       <img id="menu-tabs-workspace" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-workspace.png">
+       <img id="menu-tabs-lately" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-lately.png">
+
+       <fl-div class="divider-v"></fl-div>
+       <img id="menu-tabs-pin" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-pin.png">
+       <img id="menu-tabs-dup" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-dup.png">
+       
+       <fl-div class="divider-v"></fl-div>
+       <img id="menu-tabs-title" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-title.png">
+       <img id="menu-tabs-grp" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-grp.png">
+       <img id="menu-tabs-grp-add" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/menu-tabs-grp-add.png">
+    </fl-div><fl-div id="read-submenu" class="fl-submenu-container" style="top: 472px">
+       <img id="menu-read-latest" class="fl-submenu-item" src="chrome-extension://dppcnmibpgmagiigcnfdjpnghplibbna/images/read.png">
+    </fl-div>
+</body>
+</html>
