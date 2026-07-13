@@ -31,7 +31,7 @@
 ### 使用方式
 
 - **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/DataForge)
-- **本地使用**：下载 `DataForge/数据工作台.html`，双击用浏览器打开
+- **本地使用**：下载 `DataForge/index.html`，双击用浏览器打开
 - **内网部署**：拷贝到内网服务器或共享目录即可
 
 ### 支持的文件格式
