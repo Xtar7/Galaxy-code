@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据工作台 — Excel/CSV 处理工具</title>
+<style>
+:root {
+  --text-primary: #1a1a1a; --text-secondary: #4a4a4a; --text-tertiary: #8a8a8a;
+  --text-quaternary: #b0b0b0; --surface: #ffffff; --surface-muted: #f5f5f5;
+  --border: #e0e0e0; --danger: #dc3545; --positive: #28a745; --warning: #f0ad4e;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
+  --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono: "SF Mono","Fira Code",Consolas,monospace;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--font-sans); margin:0; padding:0; background:var(--surface-muted); color:var(--text-primary); font-size:15px; line-height:1.5; }
+.container { max-width:1400px; margin:0 auto; padding:24px 16px; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.header-title { font-size:22px; font-weight:600; }
+.header-sub { font-size:13px; color:var(--text-tertiary); margin-top:2px; }
+.btn-primary { background:var(--text-primary); color:var(--surface); border:none; padding:9px 18px; border-radius:var(--radius-lg); font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.btn-secondary { background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); padding:6px 12px; border-radius:var(--radius-md); font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.btn-danger { background:transparent; color:var(--danger); border:none; padding:4px 8px; border-radius:var(--radius-sm); font-size:12px; cursor:pointer; opacity:0; transition:opacity 0.15s; }
+.btn-small { padding:4px 10px; font-size:12px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:16px; margin-bottom:16px; }
+.card-title { font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:10px; }
+.tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; flex-wrap:wrap; }
+.tab-btn { padding:10px 16px; font-size:14px; border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; color:var(--text-tertiary); font-weight:500; }
+.tab-btn.active { color:var(--text-primary); border-bottom-color:var(--text-primary); }
+.tab-content { display:none; } .tab-content.active { display:block; }
+.file-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface-muted); margin-bottom:6px; }
+.file-item:hover .btn-danger { opacity:1; }
+.file-name { font-size:14px; color:var(--text-secondary); }
+.file-meta { font-size:12px; color:var(--text-quaternary); margin-left:8px; }
+.chk-group { display:flex; gap:8px; flex-wrap:wrap; }
+.chk-label { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-md); cursor:pointer; font-size:13px; color:var(--text-secondary); background:var(--surface-muted); user-select:none; }
+.condition-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+.condition-row select, .condition-row input { padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; background:var(--surface); color:var(--text-primary); }
+.preview-table-wrap { overflow-x:auto; max-width:100%; border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:8px; }
+.preview-table { width:auto; min-width:100%; border-collapse:collapse; font-size:12px; }
+.preview-table th { background:var(--surface-muted); padding:6px 10px; text-align:left; font-size:11px; font-weight:500; color:var(--text-secondary); border-bottom:1px solid var(--border); white-space:nowrap; }
+.preview-table td { padding:5px 10px; color:var(--text-primary); border-bottom:1px solid var(--border); white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+.clean-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.clean-option { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); cursor:pointer; background:var(--surface-muted); font-size:14px; color:var(--text-secondary); }
+.table-wrap { overflow:auto; max-height:480px; border:1px solid var(--border); border-radius:var(--radius-lg); }
+.data-table { width:100%; border-collapse:collapse; font-size:13px; }
+.data-table th { position:sticky; top:0; background:var(--surface-muted); padding:10px 12px; text-align:left; font-size:12px; font-weight:500; color:var(--text-secondary); border-bottom:1px solid var(--border); white-space:nowrap; z-index:1; }
+.data-table td { padding:8px 12px; color:var(--text-primary); border-bottom:1px solid var(--border); white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+.data-table tr:hover td { background:var(--surface-muted); }
+.empty-state { padding:60px; text-align:center; color:var(--text-quaternary); }
+.res-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.res-tab { padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; cursor:pointer; background:var(--surface); color:var(--text-secondary); }
+.res-tab.active { background:var(--text-primary); color:var(--surface); border-color:var(--text-primary); }
+.feedback { display:none; padding:10px 14px; border-radius:var(--radius-md); background:rgba(40,167,69,0.1); color:var(--positive); font-size:13px; text-align:center; margin-top:10px; }
+input[type="file"] { display:none; }
+textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); font-size:13px; background:var(--surface); color:var(--text-primary); resize:vertical; font-family:var(--font-mono); }
+select { padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); font-size:14px; background:var(--surface); color:var(--text-primary); }
+.merge-box { padding:14px; border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface-muted); }
+.merge-label { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; color:var(--text-secondary); margin-right:16px; }
+.map-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid var(--border); }
+.map-row:last-child { border-bottom:none; }
+.map-row select, .map-row input { padding:6px 10px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; background:var(--surface); color:var(--text-primary); }
+.extract-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+.extract-row select, .extract-row input { padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; background:var(--surface); color:var(--text-primary); }
+.join-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+.join-row select { padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; background:var(--surface); color:var(--text-primary); min-width:160px; }
+@media(max-width:640px){ .header{flex-direction:column;align-items:flex-start;} .condition-row,.map-row,.extract-row,.join-row{flex-direction:column;align-items:stretch;} .condition-row select,.condition-row input,.map-row select,.map-row input,.extract-row select,.extract-row input,.join-row select{width:100%;} }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div>
+    <div class="header-title">数据工作台</div>
+    <div class="header-sub">上传、筛选、合并、拆分、清洗、字段重组、关联、导出 — 纯浏览器运行，无需网络</div>
+  </div>
+  <label>
+    <input type="file" id="fileInput" multiple accept=".csv,.txt,.json,.tsv,.xlsx,.xls">
+    <span class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      上传文件
+    </span>
+  </label>
+</div>
+
+<div id="filesPanel" class="card" style="display:none;">
+  <div class="card-title">已上传文件</div>
+  <div id="filesList"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="filter">筛选与合并</button>
+  <button class="tab-btn" data-tab="map">字段映射重组</button>
+  <button class="tab-btn" data-tab="join">多表关联</button>
+  <button class="tab-btn" data-tab="split">条件拆分</button>
+  <button class="tab-btn" data-tab="clean">数据清洗</button>
+  <button class="tab-btn" data-tab="preview">预览与导出</button>
+</div>
+
+<!-- TAB: Filter & Merge -->
+<div id="tab-filter" class="tab-content active">
+  <div class="card">
+    <div class="card-title">选择要处理的表</div>
+    <div id="filterFileSelect" class="chk-group"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span class="card-title" style="margin-bottom:0;">数据预览</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+        <input type="radio" name="previewRows" value="1" checked> 1行
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+        <input type="radio" name="previewRows" value="3"> 3行
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+        <input type="radio" name="previewRows" value="5"> 5行
+      </label>
+    </div>
+    <div id="previewTableContainer" style="margin-top:10px;">
+      <div style="font-size:13px;color:var(--text-tertiary);">请先选择要预览的文件</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">选择要保留的列（留空则保留全部）</div>
+    <div id="filterColSelect" class="chk-group"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span class="card-title">筛选条件</span>
+      <button id="addFilterBtn" class="btn-secondary">+ 添加条件</button>
+    </div>
+    <div id="filterConditions"></div>
+  </div>
+  <div class="card merge-box">
+    <div class="card-title">合并方式</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <label class="merge-label"><input type="radio" name="mergeMode" value="union" checked> 纵向合并（行拼接）</label>
+      <label class="merge-label"><input type="radio" name="mergeMode" value="intersect"> 取交集（相同列的行）</label>
+      <label class="merge-label"><input type="radio" name="mergeMode" value="none"> 不合并（分别处理）</label>
+    </div>
+  </div>
+  <button id="applyFilterBtn" class="btn-primary" style="margin-bottom:16px;">应用筛选</button>
+</div>
+
+<!-- TAB: Field Mapping -->
+<div id="tab-map" class="tab-content">
+  <div class="card">
+    <div class="card-title">字段映射重组 — 从多个表中挑选字段，组成新表</div>
+    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:12px;">
+      选择来源表和字段，指定新列名。支持计算列（用 <code>{列名}</code> 引用字段，如 <code>{单价}*{数量}</code>）
+    </div>
+    <div id="fieldMapRows"></div>
+    <div style="margin-top:10px;"><button id="addMapRowBtn" class="btn-secondary">+ 添加字段</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title">正则提取 — 从某列提取特定位置的值</div>
+    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:12px;">
+      例如列值 <code>xxxxx:10005;xxxx:55658</code>，用正则 <code>:([^;]+)</code> 提取冒号后到分号前的值。勾选"提取所有匹配"可提取多个值（用逗号分隔）
+    </div>
+    <div id="extractRows"></div>
+    <div style="margin-top:10px;"><button id="addExtractBtn" class="btn-secondary">+ 添加提取规则</button></div>
+  </div>
+  <button id="applyMapBtn" class="btn-primary" style="margin-bottom:16px;">执行重组</button>
+</div>
+
+<!-- TAB: Join -->
+<div id="tab-join" class="tab-content">
+  <div class="card">
+    <div class="card-title">多表关联（Join）— 按关键字段关联多个表</div>
+    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:12px;">
+      选择主表和关联表，指定关联字段。主表为第一个上传的文件。
+    </div>
+    <div id="joinRows"></div>
+    <div style="margin-top:10px;"><button id="addJoinBtn" class="btn-secondary">+ 添加关联</button></div>
+  </div>
+  <div class="card merge-box">
+    <div class="card-title">关联方式</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <label class="merge-label"><input type="radio" name="joinMode" value="left" checked> 左连接（保留主表所有行）</label>
+      <label class="merge-label"><input type="radio" name="joinMode" value="inner"> 内连接（只保留匹配的行）</label>
+    </div>
+  </div>
+  <button id="applyJoinBtn" class="btn-primary" style="margin-bottom:16px;">执行关联</button>
+</div>
+
+<!-- TAB: Split -->
+<div id="tab-split" class="tab-content">
+  <div class="card">
+    <div class="card-title">选择源表</div>
+    <select id="splitSource" style="width:100%;max-width:320px;"><option value="">-- 选择表 --</option></select>
+  </div>
+  <div class="card">
+    <div class="card-title">按哪列拆分</div>
+    <select id="splitColumn" style="width:100%;max-width:320px;"><option value="">-- 选择列 --</option></select>
+  </div>
+  <div class="card">
+    <div class="card-title">或按自定义条件拆分（多条件用换行分隔，每行一个条件）</div>
+    <textarea id="splitConditions" rows="5" placeholder="例如：
+status == 'active'
+age > 18
+name contains '张'"></textarea>
+  </div>
+  <button id="applySplitBtn" class="btn-primary" style="margin-bottom:16px;">执行拆分</button>
+  <div id="splitResultInfo" style="display:none;margin-bottom:16px;font-size:13px;color:var(--text-tertiary);"></div>
+</div>
+
+<!-- TAB: Clean -->
+<div id="tab-clean" class="tab-content">
+  <div class="card">
+    <div class="card-title">选择要清洗的表</div>
+    <div id="cleanFileSelect" class="chk-group"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">清洗选项</div>
+    <div class="clean-grid">
+      <label class="clean-option"><input type="checkbox" id="cleanTrim" checked> 去除首尾空格</label>
+      <label class="clean-option"><input type="checkbox" id="cleanEmptyRows" checked> 删除完全空行</label>
+      <label class="clean-option"><input type="checkbox" id="cleanEmptyCols"> 删除完全空列</label>
+      <label class="clean-option"><input type="checkbox" id="cleanDuplicates"> 删除重复行</label>
+      <label class="clean-option"><input type="checkbox" id="cleanNulls"> 填充空值</label>
+      <label class="clean-option"><input type="checkbox" id="cleanCase"> 统一列名大小写（小写）</label>
+    </div>
+  </div>
+  <div id="nullFillOptions" class="card" style="display:none;">
+    <div class="card-title">填充方式</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <label class="merge-label"><input type="radio" name="nullFill" value="empty" checked> 空字符串</label>
+      <label class="merge-label"><input type="radio" name="nullFill" value="zero"> 0</label>
+      <label class="merge-label"><input type="radio" name="nullFill" value="na"> N/A</label>
+    </div>
+  </div>
+  <button id="applyCleanBtn" class="btn-primary" style="margin-bottom:16px;">执行清洗</button>
+</div>
+
+<!-- TAB: Preview & Export -->
+<div id="tab-preview" class="tab-content">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="card-title">当前结果</div>
+        <div id="resultInfo" style="font-size:14px;color:var(--text-secondary);">暂无数据</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button id="exportXlsx" class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          XLSX
+        </button>
+        <button id="exportCsv" class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button id="exportMd" class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Markdown
+        </button>
+        <button id="copyData" class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          复制
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="resultSelector" style="display:none;">
+    <div class="card-title">选择要查看的表</div>
+    <div id="resultTabs" class="res-tabs"></div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="dataTableHead"></thead>
+      <tbody id="dataTableBody"></tbody>
+    </table>
+    <div id="emptyState" class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:10px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div>暂无数据，请先上传文件并执行操作</div>
+    </div>
+  </div>
+  <div id="copyFeedback" class="feedback">已复制到剪贴板</div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+
+(function(){
+  const files = {};
+  let fileCounter = 0;
+  let results = {};
+  let activeResultId = null;
+  let filterConditions = [];
+  let fieldMaps = [];
+  let extractRules = [];
+  let joinConfigs = [];
+
+  function uid(){ return 'f' + (++fileCounter); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function getAllCols(){
+    const cols = new Set();
+    Object.values(files).forEach(f=>f.headers.forEach(h=>cols.add(h)));
+    return Array.from(cols);
+  }
+  function getSelectedFiles(){
+    return Array.from(document.querySelectorAll('.file-check:checked')).map(cb=>files[cb.dataset.id]).filter(Boolean);
+  }
+  function getSelectedCols(){
+    return Array.from(document.querySelectorAll('.col-check:checked')).map(cb=>cb.value);
+  }
+
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    if(!lines.length) return {headers:[],rows:[]};
+    const headers = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const vals=[]; let cur='', inQ=false;
+      for(let ch of lines[i]+','){
+        if(ch==='"'){ inQ=!inQ; continue; }
+        if(ch===',' && !inQ){ vals.push(cur.trim()); cur=''; }
+        else cur+=ch;
+      }
+      while(vals.length<headers.length) vals.push('');
+      const row={}; headers.forEach((h,idx)=>row[h]=vals[idx]||''); rows.push(row);
+    }
+    return {headers,rows};
+  }
+  function parseTSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    if(!lines.length) return {headers:[],rows:[]};
+    const headers = lines[0].split('\t').map(h=>h.trim());
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const vals = lines[i].split('\t');
+      const row={}; headers.forEach((h,idx)=>row[h]=vals[idx]!==undefined?vals[idx].trim():''); rows.push(row);
+    }
+    return {headers,rows};
+  }
+  function parseJSON(text){
+    const arr=JSON.parse(text);
+    if(!Array.isArray(arr)||!arr.length) return {headers:[],rows:[]};
+    const headers=Object.keys(arr[0]);
+    return {headers,rows:arr};
+  }
+  function parseAuto(text, filename){
+    if(filename.endsWith('.json')) return parseJSON(text);
+    if(filename.endsWith('.tsv') || filename.endsWith('.txt')){
+      if(text.includes('\t')) return parseTSV(text);
+    }
+    try { return parseCSV(text); } catch(e){
+      if(text.includes('\t')) return parseTSV(text);
+      return parseCSV(text);
+    }
+  }
+
+  document.getElementById('fileInput').addEventListener('change', function(e){
+    Array.from(e.target.files).forEach(file=>{
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        const id=uid();
+        let data;
+        try{ data=parseAuto(ev.target.result, file.name); }
+        catch(err){ alert('解析失败: '+file.name+'\n'+err.message); return; }
+        files[id]={name:file.name, headers:data.headers, rows:data.rows, id: id};
+        renderFilesList();
+        updateAllSelectors();
+      };
+      reader.readAsText(file);
+    });
+    e.target.value='';
+  });
+
+  function renderFilesList(){
+    const list=document.getElementById('filesList');
+    const panel=document.getElementById('filesPanel');
+    const ids=Object.keys(files);
+    if(!ids.length){ panel.style.display='none'; return; }
+    panel.style.display='block';
+    list.innerHTML=ids.map(id=>`
+      <div class="file-item">
+        <div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="file-name">${esc(files[id].name)}</span>
+          <span class="file-meta">${files[id].rows.length} 行 · ${files[id].headers.length} 列</span>
+        </div>
+        <button data-id="${id}" class="btn-danger">删除</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.btn-danger').forEach(btn=>{
+      btn.addEventListener('click',()=>{ delete files[btn.dataset.id]; renderFilesList(); updateAllSelectors(); });
+    });
+  }
+
+  function updateAllSelectors(){
+    const ff=document.getElementById('filterFileSelect');
+    ff.innerHTML=Object.entries(files).map(([id,f])=>`
+      <label class="chk-label"><input type="checkbox" class="file-check" data-id="${id}" checked> ${esc(f.name)}</label>
+    `).join('');
+
+    const cs=document.getElementById('filterColSelect');
+    const allCols=getAllCols();
+    cs.innerHTML=allCols.map(c=>`
+      <label class="chk-label"><input type="checkbox" class="col-check" value="${esc(c)}"> ${esc(c)}</label>
+    `).join('');
+
+    const cleanSel=document.getElementById('cleanFileSelect');
+    cleanSel.innerHTML=Object.entries(files).map(([id,f])=>`
+      <label class="chk-label"><input type="checkbox" class="clean-check" data-id="${id}" checked> ${esc(f.name)}</label>
+    `).join('');
+
+    const ss=document.getElementById('splitSource');
+    ss.innerHTML='<option value="">-- 选择表 --</option>'+Object.entries(files).map(([id,f])=>`<option value="${id}">${esc(f.name)}</option>`).join('');
+    updateSplitColumn();
+    updateMapFileSelects();
+    updateExtractFileSelects();
+    updateJoinFileSelects();
+    updatePreviewTable();
+  }
+
+  function updateSplitColumn(){
+    const sid=document.getElementById('splitSource').value;
+    const sc=document.getElementById('splitColumn');
+    if(!sid||!files[sid]){ sc.innerHTML='<option value="">-- 选择列 --</option>'; return; }
+    sc.innerHTML='<option value="">-- 选择列 --</option>'+files[sid].headers.map(h=>`<option value="${esc(h)}">${esc(h)}</option>`).join('');
+  }
+  document.getElementById('splitSource').addEventListener('change', updateSplitColumn);
+
+  function updatePreviewTable(){
+    const selectedFiles = getSelectedFiles();
+    const container = document.getElementById('previewTableContainer');
+    if(!selectedFiles.length){
+      container.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);">请先选择要预览的文件</div>';
+      return;
+    }
+    const previewRows = parseInt(document.querySelector('input[name="previewRows"]:checked').value);
+    let html = '';
+    selectedFiles.forEach(f=>{
+      const showRows = f.rows.slice(0, previewRows);
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;">${esc(f.name)} — ${f.rows.length} 行</div>
+        <div class="preview-table-wrap">
+          <table class="preview-table">
+            <thead><tr>${f.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+            <tbody>${showRows.map(r=>`<tr>${f.headers.map(h=>`<td>${esc(r[h]!==undefined?r[h]:'')}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  document.addEventListener('change', function(e){
+    if(e.target.classList.contains('file-check') || e.target.name === 'previewRows'){
+      updatePreviewTable();
+    }
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  document.getElementById('addFilterBtn').addEventListener('click',()=>{
+    const allCols=getAllCols();
+    if(!allCols.length){ alert('请先上传文件'); return; }
+    const idx=filterConditions.length;
+    filterConditions.push({col:allCols[0],op:'==',val:''});
+    const div=document.createElement('div');
+    div.className='condition-row';
+    div.innerHTML=`<select data-idx="${idx}" class="fc-col">${allCols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+      <select data-idx="${idx}" class="fc-op">
+        <option value="==">等于</option><option value="!=">不等于</option><option value="contains">包含</option>
+        <option value="starts">开头是</option><option value="ends">结尾是</option>
+        <option value=">">大于</option><option value="<">小于</option><option value=">=">大于等于</option><option value="<=">小于等于</option>
+        <option value="empty">为空</option><option value="notempty">非空</option>
+      </select>
+      <input data-idx="${idx}" class="fc-val" type="text" placeholder="值">
+      <button data-idx="${idx}" class="btn-secondary fc-del" style="color:var(--danger);border-color:var(--danger);">删除</button>`;
+    document.getElementById('filterConditions').appendChild(div);
+    div.querySelector('.fc-del').addEventListener('click',()=>{ filterConditions.splice(idx,1); div.remove(); reindexConditions(); });
+    div.querySelector('.fc-col').addEventListener('change',e=>{ filterConditions[e.target.dataset.idx].col=e.target.value; });
+    div.querySelector('.fc-op').addEventListener('change',e=>{ filterConditions[e.target.dataset.idx].op=e.target.value; updateValVisible(div,e.target.value); });
+    div.querySelector('.fc-val').addEventListener('input',e=>{ filterConditions[e.target.dataset.idx].val=e.target.value; });
+    updateValVisible(div,'==');
+  });
+
+  function updateValVisible(div,op){
+    const inp=div.querySelector('.fc-val');
+    inp.style.display=(op==='empty'||op==='notempty')?'none':'inline-block';
+  }
+  function reindexConditions(){
+    document.querySelectorAll('.condition-row').forEach((div,i)=>{
+      div.querySelectorAll('[data-idx]').forEach(el=>el.dataset.idx=i);
+    });
+  }
+
+  function matchCondition(row,cond){
+    const v=String(row[cond.col]||'');
+    const target=cond.val;
+    switch(cond.op){
+      case '==': return v==target;
+      case '!=': return v!=target;
+      case 'contains': return v.includes(target);
+      case 'starts': return v.startsWith(target);
+      case 'ends': return v.endsWith(target);
+      case '>': return parseFloat(v)>parseFloat(target);
+      case '<': return parseFloat(v)<parseFloat(target);
+      case '>=': return parseFloat(v)>=parseFloat(target);
+      case '<=': return parseFloat(v)<=parseFloat(target);
+      case 'empty': return v==='';
+      case 'notempty': return v!=='';
+    }
+    return true;
+  }
+
+  document.getElementById('applyFilterBtn').addEventListener('click',()=>{
+    const selectedFiles=getSelectedFiles();
+    if(!selectedFiles.length){ alert('请先选择文件'); return; }
+    const selectedCols=getSelectedCols();
+    const mergeMode=document.querySelector('input[name="mergeMode"]:checked').value;
+
+    let processed = selectedFiles.map(f=>{
+      let rows=f.rows.filter(r=>filterConditions.every(c=>matchCondition(r,c)));
+      let headers=selectedCols.length?selectedCols.filter(c=>f.headers.includes(c)):f.headers;
+      rows=rows.map(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]!==undefined?r[h]:''); return o; });
+      return {name:f.name,headers,rows};
+    }).filter(f=>f.rows.length>0);
+
+    if(!processed.length){ alert('筛选后无数据'); return; }
+
+    if(mergeMode==='union'){
+      const allH=new Set(); processed.forEach(p=>p.headers.forEach(h=>allH.add(h)));
+      const headers=Array.from(allH);
+      const rows=[];
+      processed.forEach(p=>{
+        p.rows.forEach(r=>{ const o={}; headers.forEach(h=>o[h]=r[h]!==undefined?r[h]:''); rows.push(o); });
+      });
+      results={merged:{name:'合并结果',headers,rows}};
+      activeResultId='merged';
+    }else if(mergeMode==='intersect'){
+      const commonH=processed[0].headers.filter(h=>processed.every(p=>p.headers.includes(h)));
+      const keyRows=new Map();
+      processed.forEach(p=>{
+        p.rows.forEach(r=>{
+          const key=commonH.map(h=>r[h]).join('|');
+          if(!keyRows.has(key)) keyRows.set(key,r);
+        });
+      });
+      const rows=Array.from(keyRows.values());
+      results={intersected:{name:'交集结果',headers:commonH,rows}};
+      activeResultId='intersected';
+    }else{
+      results={};
+      processed.forEach((p,i)=>{ const id='res_'+i; results[id]={name:p.name+' (筛选后)',headers:p.headers,rows:p.rows}; });
+      activeResultId=Object.keys(results)[0];
+    }
+    showResults();
+    switchToTab('preview');
+  });
+
+  function updateMapFileSelects(){
+    const fileOptions = Object.entries(files).map(([id,f])=>`<option value="${id}">${esc(f.name)}</option>`).join('');
+    document.querySelectorAll('.map-file').forEach(sel=>{
+      const oldVal = sel.value;
+      sel.innerHTML = '<option value="">-- 选择表 --</option>' + fileOptions;
+      if(files[oldVal]) sel.value = oldVal;
+      sel.dispatchEvent(new Event('change'));
+    });
+  }
+
+  function updateMapColSelects(fileSelect){
+    const row = fileSelect.closest('.map-row');
+    const colSel = row.querySelector('.map-col');
+    const fid = fileSelect.value;
+    if(!fid || !files[fid]){
+      colSel.innerHTML = '<option value="">-- 选择字段 --</option>';
+      return;
+    }
+    const cols = files[fid].headers;
+    colSel.innerHTML = '<option value="">-- 选择字段 --</option>' + 
+      cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+      '<option value="__formula__">-- 使用公式 --</option>';
+  }
+
+  function addMapRow(){
+    const idx = fieldMaps.length;
+    fieldMaps.push({file:'',col:'',newName:'',formula:''});
+    const div = document.createElement('div');
+    div.className = 'map-row';
+    div.innerHTML = `
+      <select data-idx="${idx}" class="map-file" style="min-width:180px;"><option value="">-- 选择表 --</option></select>
+      <select data-idx="${idx}" class="map-col" style="min-width:160px;"><option value="">-- 选择字段 --</option></select>
+      <input data-idx="${idx}" class="map-newname" type="text" placeholder="新列名" style="min-width:120px;">
+      <input data-idx="${idx}" class="map-formula" type="text" placeholder="公式，如 {单价}*{数量}" style="min-width:200px;flex:1;">
+      <button data-idx="${idx}" class="btn-secondary map-del btn-small" style="color:var(--danger);border-color:var(--danger);">删除</button>
+    `;
+    document.getElementById('fieldMapRows').appendChild(div);
+
+    const fileSel = div.querySelector('.map-file');
+    fileSel.addEventListener('change', function(){
+      fieldMaps[this.dataset.idx].file = this.value;
+      updateMapColSelects(this);
+    });
+    div.querySelector('.map-col').addEventListener('change', function(){
+      fieldMaps[this.dataset.idx].col = this.value;
+    });
+    div.querySelector('.map-newname').addEventListener('input', function(){
+      fieldMaps[this.dataset.idx].newName = this.value;
+    });
+    div.querySelector('.map-formula').addEventListener('input', function(){
+      fieldMaps[this.dataset.idx].formula = this.value;
+    });
+    div.querySelector('.map-del').addEventListener('click', function(){
+      fieldMaps.splice(this.dataset.idx, 1);
+      div.remove();
+      reindexMapRows();
+    });
+
+    updateMapFileSelects();
+  }
+
+  function reindexMapRows(){
+    document.querySelectorAll('#fieldMapRows .map-row').forEach((div,i)=>{
+      div.querySelectorAll('[data-idx]').forEach(el=>el.dataset.idx=i);
+    });
+  }
+
+  document.getElementById('addMapRowBtn').addEventListener('click', addMapRow);
+  if(fieldMaps.length === 0) addMapRow();
+
+  function evalFormula(formula, row){
+    let expr = formula;
+    const matches = formula.match(/\{([^}]+)\}/g) || [];
+    matches.forEach(m=>{
+      const col = m.slice(1,-1);
+      const val = row[col];
+      const num = parseFloat(val);
+      if(!isNaN(num) && String(val).match(/^-?\d+(\.\d+)?$/)){
+        expr = expr.replace(m, num);
+      } else {
+        expr = expr.replace(m, '"' + String(val).replace(/"/g,'\"') + '"');
+      }
+    });
+    try {
+      if(!expr.match(/^[\d\.\+\-\*\/\%\(\)\s\"\w]+$/)) return '';
+      return Function('"use strict"; return (' + expr + ')')();
+    } catch(e) { return ''; }
+  }
+
+  function updateExtractFileSelects(){
+    const fileOptions = Object.entries(files).map(([id,f])=>`<option value="${id}">${esc(f.name)}</option>`).join('');
+    document.querySelectorAll('.extract-file').forEach(sel=>{
+      const oldVal = sel.value;
+      sel.innerHTML = '<option value="">-- 选择表 --</option>' + fileOptions;
+      if(files[oldVal]) sel.value = oldVal;
+      sel.dispatchEvent(new Event('change'));
+    });
+  }
+
+  function updateExtractColSelects(fileSelect){
+    const row = fileSelect.closest('.extract-row');
+    const colSel = row.querySelector('.extract-col');
+    const fid = fileSelect.value;
+    if(!fid || !files[fid]){
+      colSel.innerHTML = '<option value="">-- 选择列 --</option>';
+      return;
+    }
+    const cols = files[fid].headers;
+    colSel.innerHTML = '<option value="">-- 选择列 --</option>' + cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+
+  function addExtractRow(){
+    const idx = extractRules.length;
+    extractRules.push({file:'',col:'',pattern:'',newName:'',global:false});
+    const div = document.createElement('div');
+    div.className = 'extract-row';
+    div.innerHTML = `
+      <select data-idx="${idx}" class="extract-file" style="min-width:160px;"><option value="">-- 选择表 --</option></select>
+      <select data-idx="${idx}" class="extract-col" style="min-width:140px;"><option value="">-- 选择列 --</option></select>
+      <input data-idx="${idx}" class="extract-pattern" type="text" placeholder="正则，如 :([^;]+)" style="min-width:180px;flex:1;">
+      <input data-idx="${idx}" class="extract-newname" type="text" placeholder="新列名" style="min-width:100px;">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text-secondary);white-space:nowrap;">
+        <input data-idx="${idx}" class="extract-global" type="checkbox"> 提取所有匹配
+      </label>
+      <button data-idx="${idx}" class="btn-secondary extract-del btn-small" style="color:var(--danger);border-color:var(--danger);">删除</button>
+    `;
+    document.getElementById('extractRows').appendChild(div);
+
+    const fileSel = div.querySelector('.extract-file');
+    fileSel.addEventListener('change', function(){
+      extractRules[this.dataset.idx].file = this.value;
+      updateExtractColSelects(this);
+    });
+    div.querySelector('.extract-col').addEventListener('change', function(){
+      extractRules[this.dataset.idx].col = this.value;
+    });
+    div.querySelector('.extract-pattern').addEventListener('input', function(){
+      extractRules[this.dataset.idx].pattern = this.value;
+    });
+    div.querySelector('.extract-newname').addEventListener('input', function(){
+      extractRules[this.dataset.idx].newName = this.value;
+    });
+    div.querySelector('.extract-global').addEventListener('change', function(){
+      extractRules[this.dataset.idx].global = this.checked;
+    });
+    div.querySelector('.extract-del').addEventListener('click', function(){
+      extractRules.splice(this.dataset.idx, 1);
+      div.remove();
+      reindexExtractRows();
+    });
+
+    updateExtractFileSelects();
+  }
+
+  function reindexExtractRows(){
+    document.querySelectorAll('#extractRows .extract-row').forEach((div,i)=>{
+      div.querySelectorAll('[data-idx]').forEach(el=>el.dataset.idx=i);
+    });
+  }
+
+  document.getElementById('addExtractBtn').addEventListener('click', addExtractRow);
+
+  document.getElementById('applyMapBtn').addEventListener('click',()=>{
+    const validMaps = fieldMaps.filter(m=>m.file && m.col && m.newName);
+    if(!validMaps.length){ alert('请至少配置一个有效的字段映射'); return; }
+
+    const baseFileId = validMaps[0].file;
+    const baseFile = files[baseFileId];
+    if(!baseFile){ alert('源表不存在'); return; }
+
+    const resultHeaders = validMaps.map(m=>m.newName);
+    const resultRows = [];
+
+    baseFile.rows.forEach(row=>{
+      const newRow = {};
+      validMaps.forEach(m=>{
+        const srcFile = files[m.file];
+        if(!srcFile) { newRow[m.newName] = ''; return; }
+        const srcRow = srcFile.rows[baseFile.rows.indexOf(row)] || srcFile.rows[0] || {};
+        if(m.col === '__formula__'){
+          newRow[m.newName] = m.formula ? evalFormula(m.formula, srcRow) : '';
+        } else {
+          newRow[m.newName] = srcRow[m.col] !== undefined ? srcRow[m.col] : '';
+        }
+      });
+      resultRows.push(newRow);
+    });
+
+    const validExtracts = extractRules.filter(e=>e.file && e.col && e.pattern && e.newName);
+    validExtracts.forEach(ex=>{
+      const srcFile = files[ex.file];
+      if(!srcFile) return;
+      const regex = new RegExp(ex.pattern, ex.global ? 'g' : '');
+      resultRows.forEach((row, idx)=>{
+        const srcRow = srcFile.rows[idx] || {};
+        const val = String(srcRow[ex.col] || '');
+        if(ex.global){
+          const matches = [];
+          let m;
+          while((m = regex.exec(val)) !== null){
+            matches.push(m[1] || m[0]);
+            if(!ex.global) break;
+          }
+          row[ex.newName] = matches.join(', ');
+        } else {
+          const m = val.match(regex);
+          row[ex.newName] = m ? (m[1] || m[0]) : '';
+        }
+      });
+      if(!resultHeaders.includes(ex.newName)) resultHeaders.push(ex.newName);
+    });
+
+    results = { mapped: { name: '字段重组结果', headers: resultHeaders, rows: resultRows } };
+    activeResultId = 'mapped';
+    showResults();
+    switchToTab('preview');
+  });
+
+  function updateJoinFileSelects(){
+    const fileOptions = Object.entries(files).map(([id,f])=>`<option value="${id}">${esc(f.name)}</option>`).join('');
+    document.querySelectorAll('.join-file').forEach(sel=>{
+      const oldVal = sel.value;
+      sel.innerHTML = '<option value="">-- 选择表 --</option>' + fileOptions;
+      if(files[oldVal]) sel.value = oldVal;
+      sel.dispatchEvent(new Event('change'));
+    });
+  }
+
+  function updateJoinColSelects(fileSelect){
+    const row = fileSelect.closest('.join-row');
+    const colSel = row.querySelector('.join-on-col');
+    const fid = fileSelect.value;
+    if(!fid || !files[fid]){
+      colSel.innerHTML = '<option value="">-- 关联字段 --</option>';
+      return;
+    }
+    const cols = files[fid].headers;
+    colSel.innerHTML = '<option value="">-- 关联字段 --</option>' + cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+
+  function addJoinRow(){
+    const idx = joinConfigs.length;
+    joinConfigs.push({file:'',onCol:'',mainCol:''});
+    const div = document.createElement('div');
+    div.className = 'join-row';
+    div.innerHTML = `
+      <select data-idx="${idx}" class="join-file" style="min-width:180px;"><option value="">-- 选择关联表 --</option></select>
+      <select data-idx="${idx}" class="join-on-col" style="min-width:160px;"><option value="">-- 关联字段 --</option></select>
+      <span style="color:var(--text-tertiary);font-size:13px;">关联到主表的</span>
+      <select data-idx="${idx}" class="join-main-col" style="min-width:160px;"><option value="">-- 主表字段 --</option></select>
+      <button data-idx="${idx}" class="btn-secondary join-del btn-small" style="color:var(--danger);border-color:var(--danger);">删除</button>
+    `;
+    document.getElementById('joinRows').appendChild(div);
+
+    const mainColSel = div.querySelector('.join-main-col');
+    const firstFile = Object.values(files)[0];
+    if(firstFile){
+      mainColSel.innerHTML = '<option value="">-- 主表字段 --</option>' + firstFile.headers.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    }
+
+    const fileSel = div.querySelector('.join-file');
+    fileSel.addEventListener('change', function(){
+      joinConfigs[this.dataset.idx].file = this.value;
+      updateJoinColSelects(this);
+    });
+    div.querySelector('.join-on-col').addEventListener('change', function(){
+      joinConfigs[this.dataset.idx].onCol = this.value;
+    });
+    div.querySelector('.join-main-col').addEventListener('change', function(){
+      joinConfigs[this.dataset.idx].mainCol = this.value;
+    });
+    div.querySelector('.join-del').addEventListener('click', function(){
+      joinConfigs.splice(this.dataset.idx, 1);
+      div.remove();
+      reindexJoinRows();
+    });
+
+    updateJoinFileSelects();
+  }
+
+  function reindexJoinRows(){
+    document.querySelectorAll('#joinRows .join-row').forEach((div,i)=>{
+      div.querySelectorAll('[data-idx]').forEach(el=>el.dataset.idx=i);
+    });
+  }
+
+  document.getElementById('addJoinBtn').addEventListener('click', addJoinRow);
+
+  document.getElementById('applyJoinBtn').addEventListener('click',()=>{
+    const validJoins = joinConfigs.filter(j=>j.file && j.onCol && j.mainCol);
+    if(!validJoins.length){ alert('请至少配置一个关联'); return; }
+
+    const mainFile = Object.values(files)[0];
+    if(!mainFile){ alert('请先上传文件'); return; }
+
+    let resultHeaders = [...mainFile.headers];
+    let resultRows = mainFile.rows.map(r=>({...r}));
+    const joinMode = document.querySelector('input[name="joinMode"]:checked').value;
+
+    validJoins.forEach(jc=>{
+      const joinFile = files[jc.file];
+      if(!joinFile) return;
+
+      const lookup = new Map();
+      joinFile.rows.forEach(r=>{
+        const key = String(r[jc.onCol] || '');
+        if(!lookup.has(key)) lookup.set(key, r);
+      });
+
+      const newCols = joinFile.headers.filter(h=>h!==jc.onCol && !resultHeaders.includes(h));
+      resultHeaders = resultHeaders.concat(newCols);
+
+      resultRows = resultRows.map(row=>{
+        const key = String(row[jc.mainCol] || '');
+        const matched = lookup.get(key);
+        if(matched){
+          newCols.forEach(c=> row[c] = matched[c] !== undefined ? matched[c] : '');
+        } else if(joinMode === 'left'){
+          newCols.forEach(c=> row[c] = '');
+        }
+        return row;
+      });
+
+      if(joinMode === 'inner'){
+        resultRows = resultRows.filter(row=>{
+          const key = String(row[jc.mainCol] || '');
+          return lookup.has(key);
+        });
+      }
+    });
+
+    results = { joined: { name: '关联结果', headers: resultHeaders, rows: resultRows } };
+    activeResultId = 'joined';
+    showResults();
+    switchToTab('preview');
+  });
+
+  document.getElementById('applySplitBtn').addEventListener('click',()=>{
+    const sid=document.getElementById('splitSource').value;
+    const col=document.getElementById('splitColumn').value;
+    const condText=document.getElementById('splitConditions').value.trim();
+    if(!sid||!files[sid]){ alert('请选择源表'); return; }
+    const src=files[sid];
+    results={};
+
+    if(col){
+      const groups={};
+      src.rows.forEach(r=>{
+        const key=String(r[col]||'(空)');
+        if(!groups[key]) groups[key]=[];
+        groups[key].push(r);
+      });
+      Object.entries(groups).forEach(([k,rows],i)=>{
+        results['split_'+i]={name:`${src.name} - ${col}=${k}`,headers:src.headers,rows};
+      });
+    }else if(condText){
+      const lines=condText.split('\n').map(l=>l.trim()).filter(Boolean);
+      const assigned=new Set();
+      lines.forEach((line,i)=>{
+        const cond=parseCondition(line);
+        const rows=src.rows.filter((r,idx)=>{
+          if(assigned.has(idx)) return false;
+          const ok=matchCondition(r,cond);
+          if(ok) assigned.add(idx);
+          return ok;
+        });
+        results['split_'+i]={name:`${src.name} - 条件${i+1}: ${line}`,headers:src.headers,rows};
+      });
+      const rem=src.rows.filter((r,idx)=>!assigned.has(idx));
+      if(rem.length) results['split_rem']={name:`${src.name} - 其他`,headers:src.headers,rows:rem};
+    }else{ alert('请选择拆分列或填写拆分条件'); return; }
+
+    activeResultId=Object.keys(results)[0];
+    showResults();
+    const info=document.getElementById('splitResultInfo');
+    info.style.display='block';
+    info.textContent=`已拆分为 ${Object.keys(results).length} 个表`;
+    switchToTab('preview');
+  });
+
+  document.getElementById('cleanNulls').addEventListener('change',function(){
+    document.getElementById('nullFillOptions').style.display=this.checked?'block':'none';
+  });
+
+  document.getElementById('applyCleanBtn').addEventListener('click',()=>{
+    const selected=Array.from(document.querySelectorAll('.clean-check:checked')).map(cb=>files[cb.dataset.id]).filter(Boolean);
+    if(!selected.length){ alert('请选择要清洗的文件'); return; }
+    const trim=document.getElementById('cleanTrim').checked;
+    const delEmptyRows=document.getElementById('cleanEmptyRows').checked;
+    const delEmptyCols=document.getElementById('cleanEmptyCols').checked;
+    const delDups=document.getElementById('cleanDuplicates').checked;
+    const fillNull=document.getElementById('cleanNulls').checked;
+    const fillMode=document.querySelector('input[name="nullFill"]:checked').value;
+    const unifyCase=document.getElementById('cleanCase').checked;
+    const fillVal={empty:'',zero:'0',na:'N/A'}[fillMode];
+
+    results={};
+    selected.forEach((f,idx)=>{
+      let rows=f.rows.map(r=>{const o={}; Object.entries(r).forEach(([k,v])=>{o[k]=trim?String(v).trim():v;}); return o;});
+      if(delEmptyRows) rows=rows.filter(r=>Object.values(r).some(v=>String(v).trim()!==''));
+      if(fillNull) rows=rows.map(r=>{const o={}; Object.entries(r).forEach(([k,v])=>{o[k]=(v===undefined||v===null||String(v).trim()==='')?fillVal:v;}); return o;});
+      if(delDups){
+        const seen=new Set();
+        rows=rows.filter(r=>{const k=JSON.stringify(r); if(seen.has(k)) return false; seen.add(k); return true;});
+      }
+      let headers=f.headers;
+      if(delEmptyCols){
+        const emptyCols=headers.filter(h=>rows.every(r=>String(r[h]).trim()===''));
+        headers=headers.filter(h=>!emptyCols.includes(h));
+        rows=rows.map(r=>{const o={}; headers.forEach(h=>o[h]=r[h]); return o;});
+      }
+      if(unifyCase){
+        const newHeaders=headers.map(h=>h.toLowerCase().trim());
+        rows=rows.map(r=>{const o={}; headers.forEach((h,i)=>{o[newHeaders[i]]=r[h];}); return o;});
+        headers=newHeaders;
+      }
+      const id='clean_'+idx;
+      results[id]={name:f.name+' (清洗后)',headers,rows};
+    });
+
+    activeResultId=Object.keys(results)[0];
+    showResults();
+    switchToTab('preview');
+  });
+
+  function showResults(){
+    const ids=Object.keys(results);
+    if(!ids.length){ document.getElementById('resultInfo').textContent='暂无数据'; return; }
+
+    const info=document.getElementById('resultInfo');
+    const sel=document.getElementById('resultSelector');
+    const tabs=document.getElementById('resultTabs');
+
+    if(ids.length===1){
+      sel.style.display='none';
+      const r=results[ids[0]];
+      info.textContent=`${r.name} — ${r.rows.length} 行 x ${r.headers.length} 列`;
+    }else{
+      sel.style.display='block';
+      tabs.innerHTML=ids.map(id=>`
+        <button data-rid="${id}" class="res-tab ${id===activeResultId?'active':''}">${esc(results[id].name)} (${results[id].rows.length})</button>
+      `).join('');
+      tabs.querySelectorAll('.res-tab').forEach(btn=>{
+        btn.addEventListener('click',()=>{ activeResultId=btn.dataset.rid; showResults(); });
+      });
+      const r=results[activeResultId]||results[ids[0]];
+      info.textContent=`${r.name} — ${r.rows.length} 行 x ${r.headers.length} 列`;
+    }
+    renderTable(results[activeResultId]||results[ids[0]]);
+  }
+
+  function renderTable(data){
+    const empty=document.getElementById('emptyState');
+    if(!data||!data.rows.length){ empty.style.display='block'; document.getElementById('dataTableHead').innerHTML=''; document.getElementById('dataTableBody').innerHTML=''; return; }
+    empty.style.display='none';
+    const thead=document.getElementById('dataTableHead');
+    const tbody=document.getElementById('dataTableBody');
+    thead.innerHTML='<tr>'+data.headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
+    const showRows=data.rows.slice(0,300);
+    tbody.innerHTML=showRows.map(r=>`<tr>`+data.headers.map(h=>`<td>${esc(r[h]!==undefined?r[h]:'')}</td>`).join('')+'</tr>').join('');
+    if(data.rows.length>300){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td colspan="${data.headers.length}" style="text-align:center;color:var(--text-tertiary);padding:14px;">... 还有 ${data.rows.length-300} 行未显示 ...</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function switchToTab(name){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    const btn=document.querySelector(`.tab-btn[data-tab="${name}"]`);
+    if(btn){ btn.classList.add('active'); }
+    document.getElementById('tab-'+name).classList.add('active');
+  }
+
+  function getActiveData(){ return results[activeResultId]; }
+
+  document.getElementById('exportXlsx').addEventListener('click',()=>{
+    const d=getActiveData(); if(!d){ alert('无数据'); return; }
+    if(typeof XLSX==='undefined'){ alert('XLSX 库加载中，请稍后重试'); return; }
+    const ws=XLSX.utils.aoa_to_sheet([d.headers].concat(d.rows.map(r=>d.headers.map(h=>r[h]!==undefined?r[h]:''))));
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+    XLSX.writeFile(wb, d.name+'.xlsx');
+  });
+  document.getElementById('exportCsv').addEventListener('click',()=>{
+    const d=getActiveData(); if(!d){ alert('无数据'); return; }
+    download(toCSV(d),d.name+'.csv','text/csv;charset=utf-8;');
+  });
+  document.getElementById('exportMd').addEventListener('click',()=>{
+    const d=getActiveData(); if(!d){ alert('无数据'); return; }
+    download(toMD(d),d.name+'.md','text/markdown');
+  });
+  document.getElementById('copyData').addEventListener('click',()=>{
+    const d=getActiveData(); if(!d){ alert('无数据'); return; }
+    const text=toTSV(d);
+    navigator.clipboard.writeText(text).then(()=>{
+      const fb=document.getElementById('copyFeedback');
+      fb.style.display='block';
+      setTimeout(()=>fb.style.display='none',2000);
+    }).catch(()=>alert('复制失败，请手动复制'));
+  });
+
+  function toCSV(d){
+    const lines=[d.headers.map(h=>escapeCsv(h)).join(',')];
+    d.rows.forEach(r=>lines.push(d.headers.map(h=>escapeCsv(r[h]!==undefined?r[h]:'')).join(',')));
+    return '\uFEFF'+lines.join('\n');
+  }
+  function toTSV(d){
+    const lines=[d.headers.join('\t')];
+    d.rows.forEach(r=>lines.push(d.headers.map(h=>r[h]!==undefined?r[h]:'').join('\t')));
+    return lines.join('\n');
+  }
+  function toMD(d){
+    const lines=['| '+d.headers.join(' | ')+' |','| '+d.headers.map(()=>'---').join(' | ')+' |'];
+    d.rows.forEach(r=>lines.push('| '+d.headers.map(h=>String(r[h]!==undefined?r[h]:'').replace(/\|/g,'\\|')).join(' | ')+' |'));
+    return lines.join('\n');
+  }
+  function escapeCsv(v){
+    const s=String(v);
+    if(s.includes(',')||s.includes('"')||s.includes('\n')) return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  function download(content,filename,mime){
+    const blob=new Blob([content],{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+})();
+</script>
+</body>
+</html>
