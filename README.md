@@ -8,9 +8,8 @@
 
 | # | 项目 | 简介 | 在线访问 | 类型 |
 |---|------|------|----------|------|
-| 1 | [DataForge](#1-dataforge) | 浏览器端数据工作台 | [在线使用](https://xtar7.github.io/Galaxy-code/) | 前端工具 |
-| 2 | [Traceability](#2-traceability) | 身份证模拟号生成器（测试数据） | [在线使用](https://xtar7.github.io/Galaxy-code/) | 前端工具 |
-| 3 | [项目占位符](#3-项目占位符) | 待添加 | — | — |
+| 1 | [DataForge](#1-dataforge) | 浏览器端数据工作台 | [在线使用](https://xtar7.github.io/Galaxy-code/DataForge) | 前端工具 |
+| 2 | [Traceability](#2-traceability) | 身份证模拟号生成器（测试数据） | [在线使用](https://xtar7.github.io/Galaxy-code/Traceability) | 前端工具 |
 
 ---
 
@@ -31,7 +30,7 @@
 
 ### 使用方式
 
-- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/)
+- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/DataForge)
 - **本地使用**：下载 `DataForge/数据工作台.html`，双击用浏览器打开
 - **内网部署**：拷贝到内网服务器或共享目录即可
 
@@ -80,7 +79,7 @@
 
 ### 使用方式
 
-- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/)
+- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/Traceability/)
 - **本地使用**：下载 `Traceability/index.html` 和 `Traceability/data.json`，双击用浏览器打开
 - **注意事项**：本地使用时需确保 `data.json` 与 `index.html` 在同一目录
 
@@ -92,25 +91,6 @@ Vue 3 + Element Plus（CDN 引入），无需构建
 
 **本工具仅供学习与研究使用**，生成的身份证号码均为随机模拟数据，不具备任何法律效力。使用本工具所造成的任何后果，均由使用者自行承担，与作者无关。
 
----
-
-## 3. 项目占位符
-
-> 待添加新项目...
-
-### 添加新项目时，请按以下格式补充：
-
-```markdown
-## N. 项目名称
-
-**一句话简介**
-
-### 功能特性
-
-### 使用方式
-
-### 其他说明
-```
 
 ---
 
