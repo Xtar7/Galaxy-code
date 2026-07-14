@@ -110,4 +110,8 @@ Vue 3 + Element Plus（CDN 引入），无需构建
 
 ## License
 
-MIT
+本项目采用 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可。
+
+- **允许**：个人学习、研究、非商业使用
+- **不允许**：商业用途、二次授权
+- **要求**：署名、衍生作品须相同许可
