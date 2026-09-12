@@ -10,6 +10,8 @@
 |---|------|------|----------|------|
 | 1 | [DataForge](#1-dataforge) | 浏览器端数据工作台 | [在线使用](https://xtar7.github.io/Galaxy-code/DataForge) | 前端工具 |
 | 2 | [Traceability](#2-traceability) | 身份证模拟号生成器（测试数据） | [在线使用](https://xtar7.github.io/Galaxy-code/Traceability) | 前端工具 |
+| 3 | [Pentest Command Builder Pro](#3-pentest-command-builder-pro) | 渗透测试命令生成器 / 速查手册 | [在线使用](https://xtar7.github.io/Galaxy-code/PentestCB) | 前端工具 |
+| 4 | [EZ 指纹规则生成器](#4-ez-指纹规则生成器) | 一键生成 EZ 指纹规则 JSON | [在线使用](https://xtar7.github.io/Galaxy-code/finger) | 前端工具 |
 
 ---
 
@@ -91,6 +93,54 @@ Vue 3 + Element Plus（CDN 引入），无需构建
 
 **本工具仅供学习与研究使用**，生成的身份证号码均为随机模拟数据，不具备任何法律效力。使用本工具所造成的任何后果，均由使用者自行承担，与作者无关。
 
+
+---
+
+## 3. Pentest Command Builder Pro
+
+**渗透测试命令生成器 / 速查手册** — 纯前端、无框架、零构建，浏览器直接打开即用。基于"Top 10 攻击手法"分层组织 26 个工具，输入目标/参数即生成可直接复制的命令行，覆盖从信息收集到后渗透的完整链路。
+
+### 功能特性
+
+| 模块 | 说明 |
+|------|------|
+| 信息收集 | DNS 侦察（dig/dnsrecon/fierce）、WHOIS/RDAP 查询、子域名枚举 |
+| 端口扫描 | Nmap 复合扫描（时序/分片/诱饵等 WAF 规避）、Nmap HTTP 脚本扫描 |
+| 漏洞扫描 | Nikto、Nuclei 模板扫描（含 WAF 规避选项） |
+| 注入攻击 | SQLMap 全阶段/批量注入、目录路径枚举 |
+| 口令爆破 | Hydra、John the Ripper、Hashcat |
+| 漏洞利用 | Metasploit 模块、Msfvenom、反弹 Shell、木马生成（一句话/免杀/JSP/内存马/加密马） |
+| 后渗透 | Mimikatz、LinPEAS/WinPEAS 枚举 |
+| 网络与传输 | Netcat、cURL、Wget 下载器 |
+| 编码解码 | 常用编码/哈希/加解密速查工具箱 |
+| Web 手工测试 | 报文转 cURL、JWT 工作台（alg:none / HS256 弱密钥）、Payload 变体器（WAF 绕过变体批量生成）、JSONP/CORS 探测 |
+| 知识库 | Payload 速查库（XSS/SQLi/路径穿越/SSTI/命令注入/SSRF/XXE 等 12 类 118 条）、速查手册（提权清单/CVE/默认口令/WAF 绕过等）、实用小工具（IP/子网/Unix 时间戳） |
+
+### 特色
+
+- **作战环境栏**：目标/端口一次填写，全站自动带入各工具表单，支持目标池管理与一键重置
+- **收藏夹**：收藏生成的命令，可导出为 `.sh` / `.ps1`（含变量化 `TARGET`/`LHOST`）
+- **明暗主题**：暖炭落日（暗）/ 纸本赤陶（亮）双色主题，一键切换
+
+### 使用方式
+
+- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/PentestCB)
+- **本地使用**：下载整个 `PentestCB/` 目录，双击 `index.html` 用浏览器打开
+
+### 免责声明
+
+**本工具仅供授权安全测试与研究使用**，请勿用于未授权目标。使用者须对使用该工具产生的任何后果自行负责，与作者无关。
+
+---
+
+## 4. EZ 指纹规则生成器
+
+**EZ 指纹规则生成器** — 纯前端单页工具，根据 PoC 插件需求填写指纹字段（名称、类型、关键特征等），一键生成可复制到 PoC 插件的指纹规则 JSON 数据。
+
+### 使用方式
+
+- **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/finger)
+- **本地使用**：下载 `finger/index.html`，双击用浏览器打开
 
 ---
 
