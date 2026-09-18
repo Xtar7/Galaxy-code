@@ -156,8 +156,7 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     border: 1px solid var(--line);
     background: var(--surface);
     border-radius: 999px;
-    padding: 6px 14px;
-    font: inherit;
+    padding: 6px 14px;    font: inherit;
     cursor: pointer;
   }
 
@@ -211,6 +210,103 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
 
   .stat.zero b { color: var(--ink-soft); }
 
+  .provider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .provider-row label {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    flex: none;
+  }
+
+  #provider {
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.82rem;
+    color: var(--ink);
+    min-width: 200px;
+    cursor: pointer;
+  }
+
+  #provider:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .pagesize {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .pagesize-group {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .pagesize-group button {
+    border: none;
+    background: var(--surface);
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .pagesize-group button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .pager button {
+    min-width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 8px;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 0 10px;
+  }
+
+  .pager button[aria-current="page"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .pager button:disabled {
+    opacity: 0.4;
+    cursor: default;
+    color: var(--ink-soft);
+  }
+
+  .pager .gap { color: var(--ink-soft); }
+
   .actions {
     grid-column: 2;
     grid-row: 1 / span 3;
@@ -254,6 +350,9 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     .card { grid-template-columns: 1fr; }
     .actions { grid-column: 1; grid-row: auto; flex-direction: row; }
     .stats { margin-left: 0; }
+    .provider-row { flex-wrap: wrap; }
+    #provider { flex: 1; }
+    .pagesize { margin-left: 0; }
   }
 </style>
 <body>
@@ -280,9 +379,24 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     <button id="refresh" title="强制重新抓取 OpenRouter API">刷新</button>
   </div>
 
+  <div class="provider-row">
+    <label for="provider">提供商</label>
+    <select id="provider"><option value="">全部提供商</option></select>
+    <div class="pagesize">
+      <span>每页</span>
+      <div class="pagesize-group" role="group" aria-label="每页数量">
+        <button data-size="10" aria-pressed="true">10</button>
+        <button data-size="20" aria-pressed="false">20</button>
+        <button data-size="50" aria-pressed="false">50</button>
+      </div>
+    </div>
+  </div>
+
   <div class="list" id="list">
     <div class="loading">加载中…</div>
   </div>
+
+  <div class="pager" id="pager"></div>
 
   <footer>完全免费 = 输入/输出单价均为 $0。当前 OpenRouter 上所有免费模型都明确标记了 0 单价，故"未挂 free 标签但实际 $0 可试用"一类暂时为空；一旦 API 返回此类模型，会自动归入"输入输出$0可试用"。</footer>
 </div>
@@ -291,6 +405,9 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
   let allModels = [];
   let filter = "all";
   let query = "";
+  let provider = "";
+  let perPage = 10;
+  let page = 1;
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -305,6 +422,7 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     const data = await res.json();
     allModels = data.models;
     $("#updated").textContent = "数据更新于 " + new Date(data.updatedAt).toLocaleString();
+    buildProviderOptions();
     render();
   }
 
@@ -321,14 +439,15 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     const list = $("#list");
     const q = query.trim().toLowerCase();
     const rows = allModels
-      .map((m) => ({ ...m, kind: classify(m) }))
+      .map((m) => ({ ...m, kind: classify(m), provider: providerOf(m) }))
       .filter((m) => m.kind)
       .filter((m) => {
         if (filter === "free") return m.kind === "free";
         if (filter === "trial") return m.kind === "trial";
         return true;
       })
-      .filter((m) => !q || (m.name + " " + m.id).toLowerCase().includes(q))
+      .filter((m) => !q || (m.name + " " + m.id + " " + m.provider).toLowerCase().includes(q))
+      .filter((m) => !provider || m.provider === provider)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const freeCount = allModels.filter((m) => classify(m) === "free").length;
@@ -338,12 +457,19 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     $("#stat-free").textContent = freeCount;
     $("#stat-trial").textContent = trialCount;
 
-    if (!rows.length) {
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (page > totalPages) page = totalPages;
+    const start = (page - 1) * perPage;
+    const pageRows = rows.slice(start, start + perPage);
+
+    if (!total) {
       list.innerHTML = '<div class="empty">没有匹配的模型。</div>';
+      $("#pager").innerHTML = "";
       return;
     }
 
-    list.innerHTML = rows
+    list.innerHTML = pageRows
       .map((m) => {
         const modality = (m.architecture && m.architecture.modality) || "text";
         const ctx = m.context_length ? (m.context_length >= 1000 ? Math.round(m.context_length / 1000) + "K" : m.context_length) + " ctx" : "";
@@ -360,6 +486,7 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
           </span>
           <span class="meta">
             ${m.kind === "free" ? '<span class="chip">FREE</span>' : '<span class="chip dim">$0 可试用</span>'}
+            <span class="chip dim">${escapeHtml(m.provider)}</span>
             ${ctx ? `<span class="chip dim">${ctx}</span>` : ""}
             <span class="chip dim">${escapeHtml(modality)}</span>
           </span>
@@ -370,6 +497,47 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
 
     list.querySelectorAll("[data-copy]").forEach((el) =>
       el.addEventListener("click", () => copySnippet(el.dataset.copy))
+    );
+
+    renderPager(totalPages, total, start, pageRows.length);
+  }
+
+  // 提供商取自 id 的 "/" 前缀（OpenRouter 的 id 形如 cohere/north-mini-code:free）
+  function providerOf(m) {
+    const i = m.id.indexOf("/");
+    return i > 0 ? m.id.slice(0, i) : "unknown";
+  }
+
+  function renderPager(totalPages, total, start, shown) {
+    const pager = $("#pager");
+    if (totalPages <= 1) {
+      pager.innerHTML = total ? '<span class="gap">共 ' + total + " 个</span>" : "";
+      return;
+    }
+    const pages = [];
+    // 精简分页：首尾页、当前页±1，其余用省略号
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pages.push(p);
+      else if (pages[pages.length - 1] !== "…") pages.push("…");
+    }
+    let html =
+      `<button data-page="${page - 1}" ${page === 1 ? "disabled" : ""} aria-label="上一页">‹</button>`;
+    pages.forEach((p) => {
+      html +=
+        p === "…"
+          ? '<span class="gap">…</span>'
+          : `<button data-page="${p}" ${p === page ? 'aria-current="page"' : ""}>${p}</button>`;
+    });
+    html +=
+      `<button data-page="${page + 1}" ${page === totalPages ? "disabled" : ""} aria-label="下一页">›</button>`;
+    html += `<span class="gap">第 ${start + 1}–${start + shown} / 共 ${total} 个</span>`;
+    pager.innerHTML = html;
+    pager.querySelectorAll("button[data-page]").forEach((b) =>
+      b.addEventListener("click", () => {
+        page = Number(b.dataset.page);
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
     );
   }
 
@@ -392,14 +560,46 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     tab.addEventListener("click", () => {
       filter = tab.dataset.filter;
       document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-pressed", t === tab));
+      page = 1;
       render();
     })
   );
 
   $("#q").addEventListener("input", (e) => {
     query = e.target.value;
+    page = 1;
     render();
   });
+
+  // 提供商下拉：随数据加载填充，保留当前选中
+  function buildProviderOptions() {
+    const sel = $("#provider");
+    const cur = sel.value;
+    const names = [...new Set(allModels.map(providerOf))].sort((a, b) => a.localeCompare(b));
+    sel.innerHTML =
+      '<option value="">全部提供商</option>' +
+      names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+    if (names.includes(cur)) sel.value = cur;
+    else {
+      sel.value = "";
+      provider = "";
+    }
+  }
+
+  $("#provider").addEventListener("change", (e) => {
+    provider = e.target.value;
+    page = 1;
+    render();
+  });
+
+  document.querySelectorAll(".pagesize-group button").forEach((b) =>
+    b.addEventListener("click", () => {
+      perPage = Number(b.dataset.size);
+      page = 1;
+      document.querySelectorAll(".pagesize-group button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      render();
+    })
+  );
 
   $("#refresh").addEventListener("click", async () => {
     $("#refresh").textContent = "抓取中…";
