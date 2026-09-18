@@ -347,12 +347,16 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
       .map((m) => {
         const modality = (m.architecture && m.architecture.modality) || "text";
         const ctx = m.context_length ? (m.context_length >= 1000 ? Math.round(m.context_length / 1000) + "K" : m.context_length) + " ctx" : "";
+        // 详情页必须用 canonical_slug 并去掉 :free 变体后缀；
+        // OpenRouter 网页路由只认原始斜杠路径，编码成 %2F 会落到 "Author Not Found" 页。
+        const detailSlug = (m.canonical_slug || m.id).replace(/:free$/, "");
+        const detailUrl = "https://openrouter.ai/models/" + detailSlug;
         return `
         <div class="card">
           <span class="name">${escapeHtml(m.name)}</span>
           <span class="actions">
             <button class="btn" data-copy="${escapeHtml(m.id)}">复制调用示例</button>
-            <a class="btn external" target="_blank" rel="noopener" href="https://openrouter.ai/models/${encodeURIComponent(m.id)}">查看详情 ↗</a>
+            <a class="btn external" target="_blank" rel="noopener" href="${detailUrl}">查看详情 ↗</a>
           </span>
           <span class="meta">
             ${m.kind === "free" ? '<span class="chip">FREE</span>' : '<span class="chip dim">$0 可试用</span>'}
