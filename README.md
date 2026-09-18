@@ -12,6 +12,7 @@
 | 2 | [Traceability](#2-traceability) | 身份证模拟号生成器（测试数据） | [在线使用](https://xtar7.github.io/Galaxy-code/Traceability) | 前端工具 |
 | 3 | [Pentest Command Builder Pro](#3-pentest-command-builder-pro) | 渗透测试命令生成器 / 速查手册 | [在线使用](https://xtar7.github.io/Galaxy-code/PentestCB) | 前端工具 |
 | 4 | [EZ 指纹规则生成器](#4-ez-指纹规则生成器) | 一键生成 EZ 指纹规则 JSON | [在线使用](https://xtar7.github.io/Galaxy-code/finger) | 前端工具 |
+| 5 | [OpenRouter 免费模型速查](#5-openrouter-免费模型速查) | 自动抓取 OpenRouter 免费模型，支持筛选/搜索/分页 | [本地运行](https://xtar7.github.io/Galaxy-code/or-free-models) | 前后端工具 |
 
 ---
 
@@ -141,6 +142,36 @@ Vue 3 + Element Plus（CDN 引入），无需构建
 
 - **在线使用**：直接访问 [GitHub Pages](https://xtar7.github.io/Galaxy-code/finger)
 - **本地使用**：下载 `finger/index.html`，双击用浏览器打开
+
+---
+
+## 5. OpenRouter 免费模型速查
+
+**OpenRouter 免费模型速查** — 自动抓取 [OpenRouter](https://openrouter.ai) 上全部免费（输入/输出 $0 定价）模型并展示：左侧提供商卡片筛选、搜索、每页 10/20/50 分页、一键复制 curl 调用示例、跳转 OpenRouter 详情页。数据经 Node.js 后端代理 + 文件缓存（15 分钟自动刷新），前端为纯 HTML/CSS/JS 卡片画廊。
+
+### 功能特性
+
+| 功能 | 说明 |
+|------|------|
+| 自动抓取 + 缓存 | 后端定时拉取 API，筛出 0 定价模型写入 `cache.json`，默认读缓存，页面提供手动刷新 |
+| 统计 | 区分「完全免费」与「输入输出 $0 可试用」两类，并标注数据更新时间 |
+| 提供商筛选 | 左侧卡片栏按提供商分组（含数量），点击即过滤 |
+| 搜索 | 按模型名 / 提供商 / id 关键字即时过滤 |
+| 分页 | 页脚页码（省略号收敛）+ 每页 10/20/50 切换，默认 10 条 |
+| 复制调用示例 | 每个模型可一键复制带 `Authorization` 的 curl 命令 |
+| 跳转详情 | 外链到 `openrouter.ai/models/{canonical_slug}` |
+
+### 使用方式
+
+需要本地跑 Node 服务（因 OpenRouter API 不支持浏览器跨域直连，纯静态页拿不到数据）：
+
+```bash
+cd or-free-models
+node server.js   # 无第三方依赖，打开 http://localhost:3000
+```
+
+- **本地运行**：如上，`PORT` 环境变量可改端口
+- 详见 [`or-free-models/README.md`](or-free-models/README.md)
 
 ---
 
