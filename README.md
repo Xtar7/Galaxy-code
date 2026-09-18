@@ -161,17 +161,16 @@ Vue 3 + Element Plus（CDN 引入），无需构建
 | 复制调用示例 | 每个模型可一键复制带 `Authorization` 的 curl 命令 |
 | 跳转详情 | 外链到 `openrouter.ai/models/{canonical_slug}` |
 
-### 使用方式
+### 使用 Tips
 
-需要本地跑 Node 服务（因 OpenRouter API 不支持浏览器跨域直连，纯静态页拿不到数据）：
+需要本地或服务器上跑 Node 服务（OpenRouter API 不支持浏览器跨域直连，纯静态页拿不到数据）：
+
+- 自行将 `or-free-models/` 目录下载到本地或服务器
+- 运行（无第三方依赖）：
 
 ```bash
-cd or-free-models
-node server.js   # 无第三方依赖，打开 http://localhost:3000
+node server.js   # 默认 http://localhost:3000，可用 PORT 环境变量改端口
 ```
-
-- **本地运行**：如上，`PORT` 环境变量可改端口
-- 详见 [`or-free-models/README.md`](or-free-models/README.md)
 
 ---
 
