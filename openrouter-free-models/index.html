@@ -1,0 +1,414 @@
+<!doctype html>
+<!--
+impeccable direction contract
+
+THESIS: 一屏可达的免费模型清单工具，拒绝"hero 大数字 + 三张小卡片"的套路；页面第一屏就是一份可用的、可筛选、可复制调用的模型目录本身，统计信息作为角落辅助而非主角。
+
+OWN-WORLD: 浅色卡片画廊。暖白纸面底（#faf9f7）、深墨色正文、单一暖橙强调色（#e85d26，来自仓库现有 favicon 的落日橙盾牌体系）；卡片用细边框 + 轻量投影而非嵌套卡片，搜索框和标签为页面里唯一的"控件"角色，模型清单以卡片行呈现而非同尺寸 icon+标题+描述卡片墙。
+
+STORY: 开发者打开页面 → 直接看到当前所有可（免费）调用的模型 → 用搜索/筛选缩小到目标 → 一键复制调用示例或跳转 OpenRouter 详情页 → 分享 URL 给他人时说明"数据更新于 xx"。
+
+FIRST VIEWPORT: 顶部一行：页面标题（左侧）+ 统计（N 个免费 / M 个限时免费）+ 搜索框（右侧）；其下是筛选标签（全部 / 完全免费 / 输入输出$0可试用）；再下是卡片列表，每行一张卡片：模型名（粗体）、id（等宽小字，可点击复制）、上下文长度、模态标签、"复制调用示例"按钮、"查看详情"外链。主操作（搜索框、复制按钮）始终在可视区，无需滚动。
+
+FORM: 目录式单页（目录/清单形态），非 hero 卡片墙。种子关键词：浅色卡片画廊 + 免费模型目录 + 终端工具辅助层。
+
+FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、DESIGN.md 收尾。
+-->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenRouter 免费模型速查</title>
+<style>
+  :root {
+    --bg: #faf9f7;
+    --surface: #ffffff;
+    --ink: #1c1a17;
+    --ink-soft: #6d6860;
+    --line: #e5e1da;
+    --accent: #e85d26;
+    --accent-soft: #fbe9e0;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 4px 16px rgba(28, 26, 23, 0.05);
+    font-size: 15px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--accent-soft); color: var(--ink); }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 20px 96px;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 24px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  h1 small {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    min-width: 92px;
+  }
+
+  .stat b {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat span {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  #q {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font: inherit;
+    color: inherit;
+  }
+
+  #q:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .tabs { display: flex; gap: 8px; }
+
+  .tab {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-soft);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .tab[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .refresh {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 22px;
+  }
+
+  .refresh button {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .refresh button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .list { display: grid; gap: 10px; }
+
+  .card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .card .name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .card .id {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    cursor: copy;
+  }
+
+  .card .id:hover { color: var(--accent); }
+
+  .meta {
+    grid-column: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+  }
+
+  .chip {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 600;
+  }
+
+  .chip.dim { background: var(--line); color: var(--ink-soft); }
+
+  .stat.zero b { color: var(--ink-soft); }
+
+  .actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn.external { text-decoration: none; }
+
+  .empty, .loading {
+    padding: 40px 0;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+
+  footer {
+    margin-top: 40px;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  @media (max-width: 560px) {
+    .card { grid-template-columns: 1fr; }
+    .actions { grid-column: 1; grid-row: auto; flex-direction: row; }
+    .stats { margin-left: 0; }
+  }
+</style>
+<body>
+<div class="wrap">
+  <header>
+    <h1>OpenRouter 免费模型速查<small>数据来自 openrouter.ai/api/v1/models，经服务端代理缓存</small></h1>
+    <div class="stats">
+      <div class="stat"><b id="stat-free">–</b><span>完全免费</span></div>
+      <div class="stat"><b id="stat-trial">–</b><span>输入输出$0可试用</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <input id="q" type="search" placeholder="搜索模型名、提供商或 id…" autocomplete="off" />
+    <div class="tabs" role="group" aria-label="筛选">
+      <button class="tab" data-filter="all" aria-pressed="true">全部</button>
+      <button class="tab" data-filter="free" aria-pressed="false">完全免费</button>
+      <button class="tab" data-filter="trial" aria-pressed="false">$0可试用</button>
+    </div>
+  </div>
+
+  <div class="refresh">
+    <span id="updated">数据更新于 –</span>
+    <button id="refresh" title="强制重新抓取 OpenRouter API">刷新</button>
+  </div>
+
+  <div class="list" id="list">
+    <div class="loading">加载中…</div>
+  </div>
+
+  <footer>完全免费 = 输入/输出单价均为 $0。当前 OpenRouter 上所有免费模型都明确标记了 0 单价，故"未挂 free 标签但实际 $0 可试用"一类暂时为空；一旦 API 返回此类模型，会自动归入"输入输出$0可试用"。</footer>
+</div>
+
+<script>
+  let allModels = [];
+  let filter = "all";
+  let query = "";
+
+  const $ = (sel) => document.querySelector(sel);
+
+  async function load() {
+    const list = $("#list");
+    list.innerHTML = '<div class="loading">加载中…</div>';
+    const res = await fetch("/api/free-models");
+    if (!res.ok) {
+      list.innerHTML = '<div class="empty">加载失败，请点击"刷新"重试，或检查后端是否运行。</div>';
+      return;
+    }
+    const data = await res.json();
+    allModels = data.models;
+    $("#updated").textContent = "数据更新于 " + new Date(data.updatedAt).toLocaleString();
+    render();
+  }
+
+  function classify(m) {
+    const p = m.pricing || {};
+    const prompt = p.prompt === "0" || p.prompt === undefined;
+    const completion = p.completion === "0" || p.completion === undefined;
+    if (prompt && completion) return "free";
+    if ((p.prompt === "0" && p.completion === "0") || (prompt !== false && completion !== false)) return "trial";
+    return null;
+  }
+
+  function render() {
+    const list = $("#list");
+    const q = query.trim().toLowerCase();
+    const rows = allModels
+      .map((m) => ({ ...m, kind: classify(m) }))
+      .filter((m) => m.kind)
+      .filter((m) => {
+        if (filter === "free") return m.kind === "free";
+        if (filter === "trial") return m.kind === "trial";
+        return true;
+      })
+      .filter((m) => !q || (m.name + " " + m.id).toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const freeCount = allModels.filter((m) => classify(m) === "free").length;
+    const trialCount = allModels.filter((m) => classify(m) === "trial").length;
+    const statTrial = $("#stat-trial").closest(".stat");
+    statTrial.classList.toggle("zero", trialCount === 0);
+    $("#stat-free").textContent = freeCount;
+    $("#stat-trial").textContent = trialCount;
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">没有匹配的模型。</div>';
+      return;
+    }
+
+    list.innerHTML = rows
+      .map((m) => {
+        const modality = (m.architecture && m.architecture.modality) || "text";
+        const ctx = m.context_length ? (m.context_length >= 1000 ? Math.round(m.context_length / 1000) + "K" : m.context_length) + " ctx" : "";
+        return `
+        <div class="card">
+          <span class="name">${escapeHtml(m.name)}</span>
+          <span class="actions">
+            <button class="btn" data-copy="${escapeHtml(m.id)}">复制调用示例</button>
+            <a class="btn external" target="_blank" rel="noopener" href="https://openrouter.ai/models/${encodeURIComponent(m.id)}">查看详情 ↗</a>
+          </span>
+          <span class="meta">
+            ${m.kind === "free" ? '<span class="chip">FREE</span>' : '<span class="chip dim">$0 可试用</span>'}
+            ${ctx ? `<span class="chip dim">${ctx}</span>` : ""}
+            <span class="chip dim">${escapeHtml(modality)}</span>
+          </span>
+          <span class="id" data-copy="${escapeHtml(m.id)}" title="点击复制 id">${escapeHtml(m.id)}</span>
+        </div>`;
+      })
+      .join("");
+
+    list.querySelectorAll("[data-copy]").forEach((el) =>
+      el.addEventListener("click", () => copySnippet(el.dataset.copy))
+    );
+  }
+
+  async function copySnippet(id) {
+    const snippet = `curl https://openrouter.ai/api/v1/chat/completions \\\n  -H "Authorization: Bearer <你的 key>" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "${id}", "messages": [{"role": "user", "content": "hi"}]}'`;
+    await navigator.clipboard.writeText(snippet);
+    const els = document.querySelectorAll(`[data-copy="${CSS.escape(id)}"]`);
+    els.forEach((el) => {
+      const orig = el.textContent;
+      el.textContent = "已复制 ✓";
+      setTimeout(() => (el.textContent = orig), 1200);
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  document.querySelectorAll(".tab").forEach((tab) =>
+    tab.addEventListener("click", () => {
+      filter = tab.dataset.filter;
+      document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-pressed", t === tab));
+      render();
+    })
+  );
+
+  $("#q").addEventListener("input", (e) => {
+    query = e.target.value;
+    render();
+  });
+
+  $("#refresh").addEventListener("click", async () => {
+    $("#refresh").textContent = "抓取中…";
+    $("#refresh").disabled = true;
+    try {
+      await fetch("/api/refresh");
+      await load();
+    } finally {
+      $("#refresh").textContent = "刷新";
+      $("#refresh").disabled = false;
+    }
+  });
+
+  load();
+</script>
+</body>

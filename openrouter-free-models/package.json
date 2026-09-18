@@ -1,0 +1,10 @@
+{
+  "name": "openrouter-free-models",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenRouter 免费模型速查页面（Node 代理 + 缓存 + 前端卡片画廊）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
