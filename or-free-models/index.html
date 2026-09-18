@@ -45,10 +45,67 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
   ::selection { background: var(--accent-soft); color: var(--ink); }
 
   .wrap {
-    max-width: 880px;
+    max-width: 980px;
     margin: 0 auto;
     padding: 48px 20px 96px;
   }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .rail { position: sticky; top: 24px; }
+  .main { min-width: 0; }
+
+  .rail-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+
+  .rail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .prov {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink);
+  }
+
+  .prov:hover { border-color: var(--accent); }
+
+  .prov .n {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .prov[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .prov[aria-pressed="true"] .n { color: rgba(255, 255, 255, 0.85); }
 
   header {
     display: flex;
@@ -217,67 +274,20 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     margin-bottom: 14px;
   }
 
-  .provider-row label {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    flex: none;
-  }
-
-  #provider {
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--surface);
-    font: inherit;
-    font-size: 0.82rem;
-    color: var(--ink);
-    min-width: 200px;
-    cursor: pointer;
-  }
-
-  #provider:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-
-  .pagesize {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-  }
-
-  .pagesize-group {
-    display: inline-flex;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .pagesize-group button {
-    border: none;
-    background: var(--surface);
-    color: var(--ink-soft);
-    padding: 6px 12px;
-    font: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  .pagesize-group button[aria-pressed="true"] {
-    background: var(--accent);
-    color: #fff;
-  }
-
   .pager {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .pager-pages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .pager button {
@@ -306,6 +316,36 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
   }
 
   .pager .gap { color: var(--ink-soft); }
+
+  .pagesize {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .pagesize-group {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .pagesize-group button {
+    border: none;
+    background: var(--surface);
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .pagesize-group button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
 
   .actions {
     grid-column: 2;
@@ -347,12 +387,18 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
   }
 
   @media (max-width: 560px) {
+    .layout { grid-template-columns: 1fr; }
+    .rail { position: static; }
+    .rail-list {
+      flex-direction: row;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .prov { flex: none; min-width: 130px; }
     .card { grid-template-columns: 1fr; }
     .actions { grid-column: 1; grid-row: auto; flex-direction: row; }
     .stats { margin-left: 0; }
-    .provider-row { flex-wrap: wrap; }
-    #provider { flex: 1; }
-    .pagesize { margin-left: 0; }
+    .pager { flex-direction: column; align-items: flex-start; }
   }
 </style>
 <body>
@@ -379,24 +425,30 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     <button id="refresh" title="强制重新抓取 OpenRouter API">刷新</button>
   </div>
 
-  <div class="provider-row">
-    <label for="provider">提供商</label>
-    <select id="provider"><option value="">全部提供商</option></select>
-    <div class="pagesize">
-      <span>每页</span>
-      <div class="pagesize-group" role="group" aria-label="每页数量">
-        <button data-size="10" aria-pressed="true">10</button>
-        <button data-size="20" aria-pressed="false">20</button>
-        <button data-size="50" aria-pressed="false">50</button>
+  <div class="layout">
+    <aside class="rail">
+      <p class="rail-title">提供商</p>
+      <div class="rail-list" id="rail"></div>
+    </aside>
+
+    <div class="main">
+      <div class="list" id="list">
+        <div class="loading">加载中…</div>
+      </div>
+
+      <div class="pager" id="pager">
+        <div class="pager-pages" id="pager-pages"></div>
+        <div class="pagesize">
+          <span>每页</span>
+          <div class="pagesize-group" role="group" aria-label="每页数量">
+            <button data-size="10" aria-pressed="true">10</button>
+            <button data-size="20" aria-pressed="false">20</button>
+            <button data-size="50" aria-pressed="false">50</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
-  <div class="list" id="list">
-    <div class="loading">加载中…</div>
-  </div>
-
-  <div class="pager" id="pager"></div>
 
   <footer>完全免费 = 输入/输出单价均为 $0。当前 OpenRouter 上所有免费模型都明确标记了 0 单价，故"未挂 free 标签但实际 $0 可试用"一类暂时为空；一旦 API 返回此类模型，会自动归入"输入输出$0可试用"。</footer>
 </div>
@@ -422,7 +474,7 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     const data = await res.json();
     allModels = data.models;
     $("#updated").textContent = "数据更新于 " + new Date(data.updatedAt).toLocaleString();
-    buildProviderOptions();
+    buildProviderRail();
     render();
   }
 
@@ -509,7 +561,7 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
   }
 
   function renderPager(totalPages, total, start, shown) {
-    const pager = $("#pager");
+    const pager = $("#pager-pages");
     if (totalPages <= 1) {
       pager.innerHTML = total ? '<span class="gap">共 ' + total + " 个</span>" : "";
       return;
@@ -571,26 +623,30 @@ FINISH: 未审查、未记录即未完成；此构建以收尾审查、判定、
     render();
   });
 
-  // 提供商下拉：随数据加载填充，保留当前选中
-  function buildProviderOptions() {
-    const sel = $("#provider");
-    const cur = sel.value;
-    const names = [...new Set(allModels.map(providerOf))].sort((a, b) => a.localeCompare(b));
-    sel.innerHTML =
-      '<option value="">全部提供商</option>' +
-      names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
-    if (names.includes(cur)) sel.value = cur;
-    else {
-      sel.value = "";
-      provider = "";
-    }
+  // 左侧提供商卡片：随数据加载填充，带各提供商数量
+  function buildProviderRail() {
+    const rail = $("#rail");
+    const cur = provider;
+    const counts = allModels.reduce((acc, m) => {
+      const p = providerOf(m);
+      acc[p] = (acc[p] || 0) + 1;
+      return acc;
+    }, {});
+    const names = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+    const items = ['<button class="prov" data-provider="" aria-pressed="' + (cur === "") + '">全部<span class="n">' + allModels.length + '</span></button>'];
+    names.forEach((n) =>
+      items.push('<button class="prov" data-provider="' + escapeHtml(n) + '" aria-pressed="' + (cur === n) + '">' + escapeHtml(n) + '<span class="n">' + counts[n] + "</span></button>")
+    );
+    rail.innerHTML = items.join("");
+    rail.querySelectorAll(".prov").forEach((b) =>
+      b.addEventListener("click", () => {
+        provider = b.dataset.provider;
+        page = 1;
+        buildProviderRail();
+        render();
+      })
+    );
   }
-
-  $("#provider").addEventListener("change", (e) => {
-    provider = e.target.value;
-    page = 1;
-    render();
-  });
 
   document.querySelectorAll(".pagesize-group button").forEach((b) =>
     b.addEventListener("click", () => {
