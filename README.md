@@ -13,6 +13,7 @@
 | 3 | [Pentest Command Builder Pro](#3-pentest-command-builder-pro) | 渗透测试命令生成器 / 速查手册 | [在线使用](https://xtar7.github.io/Galaxy-code/PentestCB) | 前端工具 |
 | 4 | [EZ 指纹规则生成器](#4-ez-指纹规则生成器) | 一键生成 EZ 指纹规则 JSON | [在线使用](https://xtar7.github.io/Galaxy-code/finger) | 前端工具 |
 | 5 | [OpenRouter 免费模型速查](#5-openrouter-免费模型速查) | 自动抓取 OpenRouter 免费模型，支持筛选/搜索/分页 | [本地运行](https://xtar7.github.io/Galaxy-code/or-free-models) | 前后端工具 |
+| 6 | [系统软件清理工具](#6-系统软件清理工具) | 扫描并清理 Windows 孤立软件与残留数据 | [本地运行](clean-tmp/) | 系统工具 |
 
 ---
 
@@ -174,6 +175,53 @@ node server.js   # 默认 http://localhost:3000，可用 PORT 环境变量改端
 
 ---
 
+---
+
+## 6. 系统软件清理工具
+
+**系统软件及孤儿数据清理工具** — 扫描已安装软件与残留数据，模糊匹配后识别孤儿文件，支持回收站删除或永久删除。Python 3.8+，仅标准库（可选 `psutil`/`send2trash`/`pywin32`）。
+
+### 功能特性
+
+| 模块 | 功能 |
+|------|------|
+| 多维度扫描 | Windows 注册表、Program Files 文件系统、Winget/Scoop/Chocolatey 包管理器 |
+| 应用数据扫描 | LOCALAPPDATA、APPDATA、PROGRAMDATA，支持自定义路径 |
+| 智能对比 | 自动匹配已安装软件与残留数据，字符串相似度模糊匹配，按大小排序 |
+| 安全清理 | 回收站删除（可恢复）、直接删除（需管理员）、演习模式（只分析不删） |
+| 权限管理 | 自动请求管理员权限，支持 icacls 强制修改权限 |
+
+### 使用方式
+
+```bash
+# 用 uv 创建虚拟环境
+uv venv
+
+# 图形界面（需管理员权限）
+.venv\Scripts\python.exe main.py
+
+# 命令行扫描（演习模式）
+.venv\Scripts\python.exe main.py --cli --scan --dry-run
+
+# 扫描并自动清理
+.venv\Scripts\python.exe main.py --cli --scan --clean --auto
+```
+
+- **快速启动**：双击 `clean-tmp/run_cleaner.bat` 或 `run_cleaner.ps1`（右键"以管理员身份运行"）
+- **演习模式**：首次使用建议 `--dry-run`，确认结果后再实际删除
+
+### 架构
+
+```
+main.py                — 启动入口（GUI / CLI）
+app_cleaner.py         — 核心逻辑（扫描器 / 对比分析 / 清理执行）
+app_cleaner_gui.py     — tkinter 图形界面
+run_cleaner.bat        — Windows 批处理启动
+run_cleaner.ps1        — PowerShell 启动
+```
+
+---
+
 ## 快速导航
 
 - [返回顶部](#galaxy-code--代码与工具集合)
@@ -186,7 +234,7 @@ node server.js   # 默认 http://localhost:3000，可用 PORT 环境变量改端
 - **部署方式**：GitHub Pages（自动部署 `main` 分支根目录）
 - **项目结构**：工具存放在独立子文件夹中，每个工具一个目录
 - **添加新工具**：在子目录新建文件夹放入工具文件，更新本 README 目录表即可
-- **技术栈**：纯 HTML/CSS/JS，无构建步骤
+- **技术栈**：以 HTML/CSS/JS 前端工具为主，也包含 Python 等其他语言的本地工具
 
 ## License
 
