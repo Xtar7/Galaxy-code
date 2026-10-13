@@ -14,6 +14,7 @@
 | 4 | [EZ 指纹规则生成器](#4-ez-指纹规则生成器) | 一键生成 EZ 指纹规则 JSON | [在线使用](https://xtar7.github.io/Galaxy-code/finger) | 前端工具 |
 | 5 | [OpenRouter 免费模型速查](#5-openrouter-免费模型速查) | 自动抓取 OpenRouter 免费模型，支持筛选/搜索/分页 | [本地运行](https://xtar7.github.io/Galaxy-code/or-free-models) | 前后端工具 |
 | 6 | [系统软件清理工具](#6-系统软件清理工具) | 扫描并清理 Windows 孤立软件与残留数据 | [本地运行](clean-tmp/) | 系统工具 |
+| 7 | [HashDock](#7-hashdock-文件完整性校验) | 文件哈希计算与完整性复核（SHA-256 清单工具） | [在线使用](https://xtar7.github.io/Galaxy-code/HashDock) | 前端工具 |
 
 ---
 
@@ -218,6 +219,36 @@ app_cleaner.py         — 核心逻辑（扫描器 / 对比分析 / 清理执�
 app_cleaner_gui.py     — tkinter 图形界面
 run_cleaner.bat        — Windows 批处理启动
 run_cleaner.ps1        — PowerShell 启动
+```
+
+---
+
+## 7. HashDock 文件完整性校验
+
+**HashDock · 文件完整性校验** — 单文件 Web 工具（`index.html` 直开），定位：文件哈希计算与完整性复核。支持单文件及批量文件 SHA-256 校验、清单导入导出、文件前后哈希比较与校验结果汇总。Web 版使用浏览器加密 API（Web Crypto 分块读取）；本地版能力（目录批处理、大文件分块、离线复核）以命令行参考形式内置。
+
+### 功能特性
+
+| 功能 | 说明 |
+|------|------|
+| 批量 SHA-256 | 单文件 / 批量选择即算，Web Crypto 256KiB 分块读取，全程本地不上传 |
+| 清单导入导出 | 兼容 `sha256sum` 双空格格式；导出产物可直接被 `sha256sum -c` 复核 |
+| 前后哈希比较 | 「基准清单」（期望值）+「前后基线」（操作前导出值）双列自动比对 |
+| 结果汇总 | 统计卡（一致 / 不一致 / 缺失 / 变更 / 失败）+ 一键导出 TSV 汇总 |
+
+### 使用方式
+
+浏览器直接打开 `HashDock/index.html` 即可。典型前后对比流程：操作前导出清单 → 执行操作 → 重新计算 → 载入基线比对 → 导出 TSV 归档。
+
+### 可信性边界（重要）
+
+> 哈希相同可以支持文件内容一致性的判断，但**不能单独证明文件来源可信或文件从未被篡改**；可信基准和清单本身也需要保护（离线存放、独立渠道分发、签名、双人保管）。
+
+### 本地版 / 命令行参考
+
+```bash
+sha256sum ./* > manifest.txt && sha256sum -c manifest.txt   # 生成 + 复核
+find /path/to/dir -type f -exec sha256sum {} + > manifest.txt   # 目录批处理（GB 级）
 ```
 
 ---
