@@ -47,4 +47,4 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更
 - 单文件 `index.html`（内联 CSS/JS），`file://` 直开即用的前提是无运行时 fetch——全部功能自包含
 - 哈希计算：`crypto.subtle.digest('SHA-256')` + `Blob.slice` 256KiB 分块（SubtleCrypto 无增量 API，分块读入后拼接，2GB+ 请走命令行）
 - 状态为会话内存对象（切标签页不丢，刷新即清）；仅主题偏好走 localStorage（`hashdock-theme`）
-- 颜色走 CSS 令牌（`:root` 暗色 / `[data-theme="light"]` 亮色），无硬编码色值
+- 颜色走 CSS 令牌（`:root` 亮色默认 / `[data-theme="dark"]` 暗色），无硬编码色值

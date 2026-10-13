@@ -7,21 +7,21 @@
   <!-- 内联 SVG favicon：暖炭底 + 落日橙盾牌 + 勾选（零额外文件，离线可用） -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23211F1B'/><path d='M32 6 L54 14 V31 C54 45 44 55 32 59 C20 55 10 45 10 31 V14 Z' fill='%23E08158'/><polyline points='22,30 30,38 42,24' fill='none' stroke='%23211F1B' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
   <style>
-    /* ─── 主题令牌：暗色（默认）/ 亮色 ─── */
+    /* ─── 主题令牌：亮色（默认）/ 暗色 ─── */
     :root {
-      --text: #EFEDE4; --text-dim: #AAA496; --text-muted: #7B7667;
-      --bg: #171512; --surface: #201E19; --surface2: #282520;
-      --code-bg: #1B1915; --border: #3A352C;
-      --accent: #E08158; --accent2: #A6C08B; --accent3: #E5B566;
-      --danger: #E5766A;
-      --radius: 8px;
-    }
-    [data-theme="light"] {
       --text: #28251C; --text-dim: #6C675A; --text-muted: #98937F;
       --bg: #F5F2EA; --surface: #FFFDF6; --surface2: #F2EEE3;
       --code-bg: #EDE9DD; --border: #D8D2C2;
       --accent: #C15F3C; --accent2: #66803F; --accent3: #A16207;
       --danger: #B3382E;
+      --radius: 8px;
+    }
+    [data-theme="dark"] {
+      --text: #EFEDE4; --text-dim: #AAA496; --text-muted: #7B7667;
+      --bg: #171512; --surface: #201E19; --surface2: #282520;
+      --code-bg: #1B1915; --border: #3A352C;
+      --accent: #E08158; --accent2: #A6C08B; --accent3: #E5B566;
+      --danger: #E5766A;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -158,7 +158,7 @@
     <h1>HashDock · 文件完整性校验</h1>
     <span class="tag">SHA-256 清单工具</span>
     <span class="tag">Web 版 · 浏览器加密 API</span>
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️ 亮色</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 暗色</button>
   </header>
 
   <div class="layout">
@@ -440,17 +440,17 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
     $('resultBox').innerHTML = table;
   }
 
-  // ─── 主题 ────────────────────────────────────────────────────────
+  // ─── 主题（默认亮色；暗色通过 data-theme="dark" 覆盖令牌）────────
   function toggleTheme() {
-    const cur = document.documentElement.dataset.theme === 'light' ? '' : 'light';
+    const cur = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
     document.documentElement.dataset.theme = cur;
-    $('themeToggle').textContent = cur ? '🌙 暗色' : '☀️ 亮色';
+    $('themeToggle').textContent = cur ? '☀️ 亮色' : '🌙 暗色';
     try { localStorage.setItem('hashdock-theme', cur); } catch (e) {}
   }
   // file:// 下 Edge 可能把 localStorage 视为受限源，try/catch 已覆盖；
-  // CSS 默认暗色，初始化仅在存储值为 light 时切换
+  // CSS 默认亮色，初始化仅在存储值为 dark 时切换
   try {
-    if (localStorage.getItem('hashdock-theme') === 'light') toggleTheme();
+    if (localStorage.getItem('hashdock-theme') === 'dark') toggleTheme();
   } catch (e) {}
 
   $('fileInput').addEventListener('change', () => { renderResults(); });
