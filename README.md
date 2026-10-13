@@ -15,6 +15,7 @@
 | 5 | [OpenRouter 免费模型速查](#5-openrouter-免费模型速查) | 自动抓取 OpenRouter 免费模型，支持筛选/搜索/分页 | [本地运行](https://xtar7.github.io/Galaxy-code/or-free-models) | 前后端工具 |
 | 6 | [系统软件清理工具](#6-系统软件清理工具) | 扫描并清理 Windows 孤立软件与残留数据 | [本地运行](clean-tmp/) | 系统工具 |
 | 7 | [HashDock](#7-hashdock-文件完整性校验) | 文件哈希计算与完整性复核（SHA-256 清单工具） | [在线使用](https://xtar7.github.io/Galaxy-code/HashDock) | 前端工具 |
+| 8 | [HeaderScope](#8-headerscope-http-安全头审计) | HTTP 响应头安全配置审计（CSP/HSTS/Cookie 等，含判定依据与报告导出） | [在线使用](https://xtar7.github.io/Galaxy-code/HeaderScope) | 前端工具 |
 
 ---
 
@@ -250,6 +251,43 @@ run_cleaner.ps1        — PowerShell 启动
 sha256sum ./* > manifest.txt && sha256sum -c manifest.txt   # 生成 + 复核
 find /path/to/dir -type f -exec sha256sum {} + > manifest.txt   # 目录批处理（GB 级）
 ```
+
+---
+
+## 8. HeaderScope HTTP 安全头审计
+
+**HeaderScope · HTTP 安全头审计** — 单文件 Web 工具（`index.html` 直开），定位：把 HTTP 安全配置检查做成真正可用的审计工具。粘贴或导入脱敏后的 HTTP 响应头文本，逐项审计响应头（CSP、HSTS、MIME 类型保护、Referrer-Policy、Permissions-Policy、点击劫持防护）与 Cookie（Secure / HttpOnly / SameSite）安全配置；对每条发现给出**适用条件、判断依据、建议配置与参考链接**，并导出 Markdown / JSON 报告。全程在浏览器本地运行，不发起任何网络请求、不上传数据。
+
+### 功能特性
+
+| 功能 | 说明 |
+|------|------|
+| 输入 | 粘贴原始 HTTP 报文 / DevTools 导出 / curl 抓包文本，或导入脱敏 `.txt`/`.log` 文件；自动识别头行并解析 `Set-Cookie` 属性 |
+| 响应头检查 | CSP、HSTS、`X-Content-Type-Options`（MIME 类型保护）、Referrer-Policy、Permissions-Policy、`X-Frame-Options` / `frame-ancestors`（点击劫持防护） |
+| Cookie 检查 | `Secure` / `HttpOnly` / `SameSite` 三属性逐 Cookie 判定 |
+| 判定依据 | 每条发现给出风险级别 + 为什么这样判 + 建议配置（点击复制）+ MDN 官方参考链接 |
+| 上下文感知 | 填入站点 URL / 敏感 Cookie 名单后，HSTS 与 Cookie 检查的严格度随真实部署条件变化 |
+| 报告导出 | 一键导出 Markdown / JSON（含生成时间、推断协议、Cookie 明细、全部发现） |
+
+### 差异化：不止打勾
+
+HeaderScope 的核心不是「有没有某个头」，而是**解释结果在什么条件下成立**：
+
+- **HSTS**：结论强依赖是否已启用 HTTPS。站点为 HTTP 时 HSTS 不适用（先迁 HTTPS 再下发）；已 HTTPS 却未下发才判为高危缺口；`max-age` / `includeSubDomains` 不足则降级为需关注。
+- **CSP**：不能只看头是否存在。`'unsafe-inline'`、通配符来源会让「有 CSP」名存实亡；`frame-ancestors` 白名单过宽同样告警。
+- **Cookie**：是否承载会话决定严重度。普通偏好 Cookie 缺 `SameSite` 只是低优先级建议；会话 Cookie 缺 `HttpOnly`/`Secure` 才升级为高危。
+
+### 使用方式
+
+浏览器直接打开 `HeaderScope/index.html`：粘贴脱敏响应头（或点「🧪 载入示例」）→ 可选填「⚙️ 部署上下文」→「▶️ 开始审计」→ 按风险排序查看并用筛选 chips 只看未达标项 →「📄 导出 Markdown」/「🧩 导出 JSON」归档。输入框内 `Ctrl/Cmd + Enter` 可快速审计。
+
+### 可信性边界（重要）
+
+> 本工具**不做**任意目标自动扫描、不发任何出站请求（本地版后续才加入「授权范围内」的 HTTP 请求测试），当前版本完全离线。结果基于静态响应头推断，**不能替代**针对真实站点的完整安全评估；CSP / HSTS 是否「达标」需结合实际脚本来源与部署环境人工复核。
+
+### 技术栈
+
+原生 HTML/CSS/JS（无框架、无构建、无运行时 fetch），`file://` 直开即用，颜色走 CSS 令牌（亮色默认 / 暗色可切换）。
 
 ---
 
