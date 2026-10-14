@@ -1,301 +1,397 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HeaderScope — HTTP 响应头安全审计工具</title>
-<style>
-:root {
-  --text-primary: #1a1a1a; --text-secondary: #4a4a4a; --text-tertiary: #8a8a8a;
-  --text-quaternary: #b0b0b0; --surface: #ffffff; --surface-muted: #f5f5f5;
-  --border: #e0e0e0; --danger: #dc3545; --positive: #28a745; --warning: #f0ad4e;
-  --info: #17a2b8; --neutral: #8a8a8a;
-  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
-  --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
-  --font-mono: "SF Mono","Fira Code",Consolas,monospace;
-}
-* { box-sizing: border-box; }
-body { font-family: var(--font-sans); margin:0; padding:0; background:var(--surface-muted); color:var(--text-primary); font-size:15px; line-height:1.5; }
-.container { max-width:1400px; margin:0 auto; padding:24px 16px; }
-.header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-.header-title { font-size:22px; font-weight:600; }
-.header-sub { font-size:13px; color:var(--text-tertiary); margin-top:2px; }
-.btn-primary { background:var(--text-primary); color:var(--surface); border:none; padding:9px 18px; border-radius:var(--radius-lg); font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-secondary { background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); padding:6px 12px; border-radius:var(--radius-md); font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
-.btn-small { padding:4px 10px; font-size:12px; }
-.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:16px; margin-bottom:16px; }
-.card-title { font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:10px; }
-.card-desc { font-size:13px; color:var(--text-tertiary); margin:-6px 0 10px; }
-.tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; flex-wrap:wrap; }
-.tab-btn { padding:10px 16px; font-size:14px; border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; color:var(--text-tertiary); font-weight:500; }
-.tab-btn.active { color:var(--text-primary); border-bottom-color:var(--text-primary); }
-.tab-content { display:none; } .tab-content.active { display:block; }
-textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); font-size:13px; background:var(--surface); color:var(--text-primary); resize:vertical; font-family:var(--font-mono); }
-input[type="text"], select { padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); font-size:14px; background:var(--surface); color:var(--text-primary); }
-.field-label { display:block; font-size:13px; color:var(--text-secondary); margin-bottom:6px; }
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.chk-label { display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-md); cursor:pointer; font-size:13px; color:var(--text-secondary); background:var(--surface-muted); user-select:none; }
-.feedback { display:none; padding:10px 14px; border-radius:var(--radius-md); background:rgba(40,167,69,0.1); color:var(--positive); font-size:13px; text-align:center; margin-top:10px; }
-.summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.stat { flex:1; min-width:80px; text-align:center; border:1px solid var(--border); border-radius:var(--radius-lg); padding:10px 6px; background:var(--surface-muted); }
-.stat b { display:block; font-size:20px; line-height:1.2; }
-.stat span { font-size:11px; color:var(--text-tertiary); }
-.stat-bad b { color:var(--danger); } .stat-warn b { color:var(--warning); }
-.stat-info b { color:var(--info); } .stat-ok b { color:var(--positive); } .stat-na b { color:var(--neutral); }
-.res-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-.res-tab { padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-md); font-size:13px; cursor:pointer; background:var(--surface); color:var(--text-secondary); }
-.res-tab.active { background:var(--text-primary); color:var(--surface); border-color:var(--text-primary); }
-.finding { border:1px solid var(--border); border-left-width:4px; border-radius:var(--radius-lg); padding:12px 14px; margin-bottom:10px; background:var(--surface); }
-.finding[data-status="ok"] { border-left-color:var(--positive); }
-.finding[data-status="warn"] { border-left-color:var(--warning); }
-.finding[data-status="bad"] { border-left-color:var(--danger); }
-.finding[data-status="info"] { border-left-color:var(--info); }
-.finding[data-status="na"] { border-left-color:var(--neutral); }
-.f-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.f-name { font-weight:600; font-size:14px; }
-.f-cat { font-size:12px; color:var(--text-tertiary); }
-.badge { font-size:11px; font-weight:600; padding:2px 10px; border-radius:var(--radius-sm); margin-left:auto; }
-.finding[data-status="ok"] .badge { background:rgba(40,167,69,0.12); color:var(--positive); }
-.finding[data-status="warn"] .badge { background:rgba(240,173,78,0.15); color:#a06d0a; }
-.finding[data-status="bad"] .badge { background:rgba(220,53,69,0.12); color:var(--danger); }
-.finding[data-status="info"] .badge { background:rgba(23,162,184,0.12); color:var(--info); }
-.finding[data-status="na"] .badge { background:rgba(138,138,138,0.14); color:var(--text-secondary); }
-.f-current { font-size:12px; color:var(--text-secondary); margin-top:8px; font-family:var(--font-mono); word-break:break-all; background:var(--surface-muted); border-radius:var(--radius-sm); padding:5px 8px; }
-.f-current.missing { color:var(--text-quaternary); font-style:italic; }
-.f-sec { font-size:13px; margin-top:10px; }
-.f-sec .lbl { font-weight:500; font-size:11px; color:var(--text-tertiary); display:block; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.03em; }
-.f-sec pre { font-family:var(--font-mono); font-size:12px; background:var(--surface-muted); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 9px; margin-top:4px; white-space:pre-wrap; word-break:break-all; color:var(--text-primary); cursor:pointer; }
-.f-links { font-size:12px; margin-top:8px; }
-.f-links a { color:var(--info); text-decoration:none; margin-right:12px; }
-.f-links a:hover { text-decoration:underline; }
-.note { display:flex; align-items:flex-start; gap:8px; padding:10px 14px; border-radius:var(--radius-lg); background:rgba(240,173,78,0.1); color:#8a5c0a; font-size:13px; border:1px solid rgba(240,173,78,0.35); }
-.empty-state { padding:60px; text-align:center; color:var(--text-quaternary); }
-@media(max-width:640px){ .form-grid{grid-template-columns:1fr;} .header{flex-direction:column;align-items:flex-start;} }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeaderScope · HTTP 安全头审计</title>
+  <!-- 内联 SVG favicon：暖炭底 + 落日橙盾牌 + 括号（零额外文件，离线可用） -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231a1a1a'/><path d='M32 8 L52 15 V31 C52 44 43 53 32 57 C21 53 12 44 12 31 V15 Z' fill='%2328a745'/><text x='32' y='41' font-size='24' font-family='monospace' fill='%231a1a1a' text-anchor='middle'>{:}</text></svg>">
+  <style>
+    /* ─── 主题令牌：DataForge 中性浅色配色（无暗色切换） ─── */
+    :root {
+      --text: #1a1a1a; --text-dim: #4a4a4a; --text-muted: #8a8a8a;
+      --bg: #f5f5f5; --surface: #ffffff; --surface2: #f5f5f5;
+      --code-bg: #f5f5f5; --border: #e0e0e0;
+      --accent: #1a1a1a; --accent2: #28a745; --accent3: #f0ad4e;
+      --danger: #dc3545;
+      --ok: #28a745; --warn: #f0ad4e; --bad: #dc3545; --info: #17a2b8; --na: #8a8a8a;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 13px; line-height: 1.55;
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .mono { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; }
+
+    header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface); flex-shrink: 0;
+    }
+    header h1 { font-size: 15px; font-weight: 700; }
+    header .tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 10px;
+      border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .theme-toggle { display: none; }
+
+    /* ─── 布局：左窄栏（输入）/ 右宽栏（结果）─── */
+    .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 380px 1fr; }
+    .col { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+    .col + .col { border-left: 1px solid var(--border); }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .panel-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .panel-head h2 { font-size: 13px; font-weight: 700; }
+    .panel-head .hint { font-size: 11px; color: var(--text-dim); }
+    .panel-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
+    .banner {
+      font-size: 11px; color: var(--text-dim);
+      background: color-mix(in srgb, var(--accent3) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent3) 35%, transparent);
+      border-radius: 6px; padding: 8px 10px;
+    }
+
+    textarea {
+      width: 100%; font-size: 12px; color: var(--text);
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px; resize: vertical;
+      font-family: 'Cascadia Code', Consolas, monospace;
+      min-height: 120px;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+    .btn {
+      padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text-dim);
+      font-family: inherit; transition: all 0.12s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
+    .btn-primary:hover { filter: brightness(1.15); color: #ffffff; }
+    .btn-wide { flex: 1; text-align: center; }
+    .btn:active { transform: translateY(1px); }
+
+    /* ─── 上下文控件 ─── */
+    .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ctx-field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+    .ctx-field input {
+      width: 100%; font-size: 12px; color: var(--text);
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px;
+      font-family: 'Cascadia Code', Consolas, monospace;
+    }
+    .ctx-field input:focus { outline: none; border-color: var(--accent); }
+    .chk-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
+    .chk-row input { accent-color: var(--accent); }
+    .ctx-note { font-size: 10px; color: var(--text-muted); margin-top: 8px; }
+
+    /* ─── 统计卡 ─── */
+    .summary { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stat {
+      flex: 1; min-width: 74px; text-align: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px 4px;
+    }
+    .stat b { display: block; font-size: 20px; line-height: 1.1; }
+    .stat span { font-size: 10px; color: var(--text-dim); }
+    .stat-ok .b, .stat-ok b { color: var(--ok); }
+    .stat-warn b { color: var(--warn); }
+    .stat-bad b { color: var(--bad); }
+    .stat-na b { color: var(--na); }
+    .stat-info b { color: var(--info); }
+
+    /* ─── 过滤 chips ─── */
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; }
+    .chip {
+      font-size: 11px; cursor: pointer; padding: 3px 10px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text-dim);
+    }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
+
+    /* ─── 发现卡片 ─── */
+    .finding {
+      border: 1px solid var(--border); border-left: 3px solid var(--na);
+      border-radius: 6px; padding: 10px 12px; margin-bottom: 8px;
+      background: var(--surface);
+    }
+    .finding[data-status="ok"] { border-left-color: var(--ok); }
+    .finding[data-status="warn"] { border-left-color: var(--warn); }
+    .finding[data-status="bad"] { border-left-color: var(--bad); }
+    .finding[data-status="na"] { border-left-color: var(--na); }
+    .finding[data-status="info"] { border-left-color: var(--info); }
+    .finding .f-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .finding .f-name { font-weight: 700; font-size: 12px; }
+    .finding .f-cat { font-size: 10px; color: var(--text-muted); }
+    .badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+      margin-left: auto;
+    }
+    .finding[data-status="ok"] .badge { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+    .finding[data-status="warn"] .badge { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+    .finding[data-status="bad"] .badge { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+    .finding[data-status="na"] .badge { background: color-mix(in srgb, var(--na) 18%, transparent); color: var(--text-dim); }
+    .finding[data-status="info"] .badge { background: color-mix(in srgb, var(--info) 16%, transparent); color: var(--text-dim); }
+    .f-current {
+      font-size: 11px; color: var(--text-dim); margin-top: 6px;
+      font-family: 'Cascadia Code', Consolas, monospace; word-break: break-all;
+      background: var(--code-bg); border-radius: 4px; padding: 4px 8px;
+    }
+    .f-current.missing { color: var(--text-muted); font-style: italic; }
+    .f-sec { font-size: 11px; margin-top: 8px; }
+    .f-sec .lbl { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); display: block; margin-bottom: 2px; }
+    .f-sec .why { color: var(--text-dim); }
+    .f-sec .advise { color: var(--text); }
+    .f-sec pre {
+      font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px;
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 6px 8px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; color: var(--text);
+    }
+    .f-links { font-size: 10px; margin-top: 6px; }
+    .f-links a { color: var(--accent); text-decoration: none; margin-right: 10px; }
+    .f-links a:hover { text-decoration: underline; }
+    .empty { font-size: 12px; color: var(--text-muted); padding: 20px 0; text-align: center; }
+
+    #toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #ffffff; font-size: 12px; font-weight: 600;
+      padding: 7px 18px; border-radius: 20px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; z-index: 99;
+    }
+    #toast.show { opacity: 1; }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; height: auto; }
+      .layout { grid-template-columns: 1fr; }
+      .col + .col { border-left: none; border-top: 1px solid var(--border); }
+    }
+  </style>
 </head>
 <body>
-<div class="container">
+  <header>
+    <span style="font-size:18px">🛡️</span>
+    <h1>HeaderScope · HTTP 安全头审计</h1>
+    <span class="tag">响应头安全配置检查</span>
+    <span class="tag">浏览器本地 · 不上传</span>
+  </header>
 
-<div class="header">
-  <div>
-    <div class="header-title">HeaderScope · 响应头安全审计</div>
-    <div class="header-sub">粘贴或导入脱敏的 HTTP 响应头，审计响应头与 Cookie 安全配置 — 纯浏览器运行，不上传、不请求网络</div>
-  </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;">
-    <label>
-      <input type="file" id="fileInput" accept=".txt,.log,.http,.md">
-      <span class="btn-secondary" style="display:inline-flex;align-items:center;gap:6px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        导入脱敏文件
-      </span>
-    </label>
-    <button id="sampleBtn" class="btn-secondary">载入示例</button>
-    <button id="clearBtn" class="btn-secondary">清空</button>
-  </div>
-</div>
+  <div class="layout">
+    <!-- ── 左栏：输入与上下文 ── -->
+    <div class="col">
+      <div class="banner">⚠️ 本工具只解析你粘贴/导入的（脱敏）响应头文本，全程在浏览器本地运行，不发起任何网络请求、不上传数据。请仅对获得授权的资产执行安全审计，切勿把真实敏感响应头（含会话 Cookie 值）粘贴进来。</div>
 
-<div class="note">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <span>本工具只解析你粘贴/导入的脱敏响应头文本，全程在浏览器本地运行，不发起任何网络请求、不上传数据。请仅对获得授权的资产执行安全审计，切勿粘贴含真实会话 Cookie 值的响应头。</span>
-</div>
-
-<div class="tabs">
-  <button class="tab-btn active" data-tab="input">输入响应头</button>
-  <button class="tab-btn" data-tab="context">部署上下文</button>
-  <button class="tab-btn" data-tab="result">审计结果</button>
-</div>
-
-<!-- TAB: Input -->
-<div id="tab-input" class="tab-content active">
-  <div class="card">
-    <div class="card-title">粘贴响应头</div>
-    <div class="card-desc">支持原始 HTTP 报文、浏览器 DevTools 导出、curl 抓包等；自动识别头行并解析 Cookie。也可从右上角导入脱敏文本文件。</div>
-    <textarea id="headerIn" rows="12" placeholder="HTTP/1.1 200 OK
-Content-Security-Policy: default-src 'self'
-Strict-Transport-Security: max-age=31536000; includeSubdomains
-Set-Cookie: session=abc123; Path=/; HttpOnly; SameSite=Lax
-X-Frame-Options: DENY
-Referrer-Policy: strict-origin-when-cross-origin"></textarea>
-  </div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div class="card-title" style="margin-bottom:2px;">检查范围</div>
-        <div style="font-size:13px;color:var(--text-tertiary);">响应头 · Cookie 三属性 · 补充项</div>
+      <div class="panel">
+        <div class="panel-head"><h2>📥 输入响应头</h2><span class="hint">粘贴或导入</span></div>
+        <div class="panel-desc">支持原始 HTTP 报文、浏览器 DevTools 导出格式、curl 抓包等；会自动识别头行并解析 Cookie。脱敏后的文本即可。</div>
+        <textarea id="headerIn" placeholder="示例：&#10;HTTP/1.1 200 OK&#10;Content-Security-Policy: default-src 'self'&#10;Strict-Transport-Security: max-age=31536000; includeSubdomains&#10;Set-Cookie: session=abc123; Path=/; HttpOnly; SameSite=Lax&#10;X-Frame-Options: DENY&#10;Referrer-Policy: strict-origin-when-cross-origin"></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-wide" onclick="runAudit()">▶️ 开始审计</button>
+          <button class="btn" onclick="loadSample()">🧪 载入示例</button>
+          <button class="btn" onclick="clearAll()">✕ 清空</button>
+        </div>
+        <div class="btn-row">
+          <input type="file" id="fileInput" accept=".txt,.log,.http,.md" style="display:none">
+          <button class="btn" onclick="document.getElementById('fileInput').click()">📂 导入脱敏文本文件</button>
+          <button class="btn" onclick="exportReport('md')">📄 导出 Markdown</button>
+          <button class="btn" onclick="exportReport('json')">🧩 导出 JSON</button>
+        </div>
       </div>
-      <button id="runBtn" class="btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        开始审计
-      </button>
-    </div>
-  </div>
-</div>
 
-<!-- TAB: Context -->
-<div id="tab-context" class="tab-content">
-  <div class="card">
-    <div class="card-title">部署上下文</div>
-    <div class="card-desc">同一段响应头在不同部署条件下结论不同。填入实际部署信息，让审计结果贴合真实环境，而非机械打勾。</div>
-    <div class="form-grid">
-      <div>
-        <label class="field-label" for="siteUrl">站点 URL（用于推断协议）</label>
-        <input type="text" id="siteUrl" placeholder="https://example.com/" style="width:100%;">
+      <div class="panel">
+        <div class="panel-head"><h2>⚙️ 部署上下文</h2><span class="hint">影响判断结果</span></div>
+        <div class="panel-desc">同一段响应头在不同部署条件下结论不同。填入实际部署信息，让审计结果贴合你的真实环境，而非机械打勾。</div>
+        <div class="ctx-grid">
+          <div class="ctx-field">
+            <label for="siteUrl">站点 URL</label>
+            <input type="text" id="siteUrl" placeholder="https://example.com/">
+          </div>
+          <div class="ctx-field">
+            <label for="cookieCtx">Cookie 名称</label>
+            <input type="text" id="cookieCtx" placeholder="session; auth_token">
+          </div>
+        </div>
+        <label class="chk-row" for="cookieCritical"><input type="checkbox" id="cookieCritical"><span>有 Cookie 承载会话 / 敏感信息（影响 Cookie 检查严格度）</span></label>
+        <div class="ctx-note">提示：HSTS、CSP、X-Content-Type-Options 等检查的结论会随「站点协议」与「是否承载敏感 Cookie」变化。留空则按通用默认判断。</div>
       </div>
-      <div>
-        <label class="field-label" for="cookieCtx">敏感 Cookie 名称（逗号分隔）</label>
-        <input type="text" id="cookieCtx" placeholder="session, auth_token" style="width:100%;">
+
+      <div class="panel">
+        <div class="panel-head"><h2>📚 判定口径</h2><span class="hint">为什么这样判</span></div>
+        <div class="panel-desc" style="margin-bottom:4px">HeaderScope 不做「缺头就打红」。每项检查都会给出<b style="color:var(--text-dim)">适用条件</b>：例如站点未启用 HTTPS 时 HSTS 无意义、Cookie 不承载会话时 SameSite 缺失只是低优先级建议，而非高危。</div>
       </div>
     </div>
-    <div style="margin-top:12px;">
-      <label class="chk-label" style="display:inline-flex;">
-        <input type="checkbox" id="cookieCritical"> 有 Cookie 承载会话 / 敏感信息（影响 Cookie 检查严格度）
-      </label>
-    </div>
-    <div style="font-size:13px;color:var(--text-tertiary);margin-top:10px;">提示：HSTS、Cookie 等检查的结论会随「站点协议」与「是否承载敏感 Cookie」变化。留空则按通用默认判断；响应中出现 HSTS 头会据此推断为 HTTPS。</div>
-  </div>
-  <div class="card">
-    <div class="card-title">判定口径</div>
-    <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
-      HeaderScope 不做「缺头就打红」。每项检查都会给出<b>适用条件</b>：例如站点未启用 HTTPS 时 HSTS 无意义；CSP 含 <code style="font-family:var(--font-mono);font-size:12px;">'unsafe-inline'</code> 时不能认定安全；Cookie 不承载会话时 SameSite 缺失只是低优先级建议，而非高危。
-    </div>
-  </div>
-</div>
 
-<!-- TAB: Result -->
-<div id="tab-result" class="tab-content">
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div class="card-title" style="margin-bottom:2px;">审计结果</div>
-        <div id="resultInfo" style="font-size:13px;color:var(--text-secondary);">尚未审计</div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button id="exportMd" class="btn-secondary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Markdown
-        </button>
-        <button id="exportJson" class="btn-secondary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          JSON
-        </button>
+    <!-- ── 右栏：结果 ── -->
+    <div class="col">
+      <div class="panel" style="flex:1; display:flex; flex-direction:column; min-height:0">
+        <div class="panel-head"><h2>🧮 审计结果</h2><span class="hint">按风险排序</span></div>
+        <div class="panel-desc">每项含当前值、判断依据（为什么）、建议配置（可复制）与官方参考链接。</div>
+        <div id="summaryBox" style="margin-bottom:10px"></div>
+        <div class="chips" id="chips"></div>
+        <div id="resultBox" style="overflow-y:auto; flex:1; min-height:0"><div class="empty">尚未审计。粘贴响应头并点击「开始审计」，或先载入示例。</div></div>
       </div>
     </div>
   </div>
-  <div id="summaryBox" style="display:none;"></div>
-  <div id="resultTabs" class="res-tabs" style="display:none;"></div>
-  <div id="resultBox">
-    <div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:10px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      <div>尚未审计，请在「输入响应头」中粘贴响应头后点击开始审计</div>
-    </div>
-  </div>
-  <div id="copyFeedback" class="feedback">建议配置已复制到剪贴板</div>
-</div>
 
-</div>
+  <div id="toast"></div>
 
-<script>
-(function(){
+  <script>
+  // ═══ HeaderScope · 单文件应用（无依赖，file:// 直开，无网络请求）═══
   const STATUS_LABEL = { ok: '✔ 已达标', warn: '⚠ 需关注', bad: '✘ 未达标', na: '— 不适用', info: 'ℹ 建议' };
   const STATUS_ORDER = { bad: 0, warn: 1, info: 2, ok: 3, na: 4 };
-  const CATEGORY = { headers: '响应头', cookies: 'Cookie', misc: '其他' };
-  let STATE = { findings: [], raw: '', parsed: null, ctx: null, filter: 'all' };
+  const CATEGORY = {
+    headers: '响应头', cookies: 'Cookie', misc: '其他'
+  };
 
-  // ─── 解析：提取响应头 + Cookie ───────────────────────────────────
-  function parseHeaders(text){
-    const map = {};
-    const cookies = [];
-    text.split(/\r?\n/).forEach(rawLine => {
-      const line = rawLine.trim();
-      if(!line || /^\s*HTTP\/\d/i.test(line)) return;
+  // ─── 工具 ────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+  function copyText(s) {
+    navigator.clipboard.writeText(s).then(() => showToast('✅ 建议配置已复制'));
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // ─── 解析：提取响应头 + Cookie ─────────────────────────────────
+  // 接受多种输入：完整 HTTP 报文、`Name: value` 行、curl 抓取。忽略状态行/空行/非头行。
+  function parseHeaders(text) {
+    const map = {}; // 小写 key -> 数组 value（同名头可能多次出现）
+    const cookies = []; // { name, value, attrs: {secure, httpOnly, samesite, ...} }
+    let sawStatusLine = /(?:^|\n)\s*HTTP\/[\d.]+\s+\d{3}/i.test(text);
+
+    text.split(/\r?\n/).forEach(raw => {
+      const line = raw.trimEnd();
+      if (!line || /^\s*HTTP\/\d/i.test(line) || line.startsWith('\t') === false && /^[\x00-\x1f]/.test(line)) {
+        // 跳过空行 / 状态行 / 折叠续行（Tab 开头）等
+      }
       const m = line.match(/^([A-Za-z0-9!#$%&'*+.^_`|~-]+):\s?(.*)$/);
-      if(!m) return;
+      if (!m) return;
       const key = m[1].trim().toLowerCase();
       const val = m[2].trim();
-      if(!Object.prototype.hasOwnProperty.call(map, key)) map[key] = [];
+      if (!Object.prototype.hasOwnProperty.call(map, key)) map[key] = [];
       map[key].push(val);
-      if(key === 'set-cookie'){
+
+      if (key === 'set-cookie') {
         const cookie = parseSetCookie(val);
-        if(cookie) cookies.push(cookie);
+        if (cookie) cookies.push(cookie);
       }
     });
-    return { map, cookies };
+
+    return { map, cookies, sawStatusLine };
   }
 
-  function parseSetCookie(val){
+  // 解析单条 Set-Cookie 属性
+  function parseSetCookie(val) {
     const first = val.split(';').map(s => s.trim());
-    if(!first.length) return null;
+    if (!first.length) return null;
     const [nv, ...attrs] = first;
     const eq = nv.indexOf('=');
     const name = eq > -1 ? nv.slice(0, eq).trim() : nv.trim();
     const value = eq > -1 ? nv.slice(eq + 1).trim() : '';
     const lower = (s) => s.toLowerCase();
-    const parsed = { name, value, raw: val, secure: false, httpOnly: false, samesite: null, flags: [] };
+    const parsed = { name, value, raw: val, secure: false, httpOnly: false, samesite: null, path: null, domain: null, expires: null, maxAge: null, flags: [] };
     attrs.forEach(a => {
       const al = lower(a);
-      if(al.startsWith('secure')) parsed.secure = true;
-      else if(al.startsWith('httponly')) parsed.httpOnly = true;
-      else if(al.startsWith('samesite')) parsed.samesite = a.replace(/^samesite=/i, '').trim();
+      if (al.startsWith('secure')) parsed.secure = true;
+      else if (al.startsWith('httponly')) parsed.httpOnly = true;
+      else if (al.startsWith('samesite')) {
+        parsed.samesite = a.replace(/^samesite=/i, '').trim();
+      }
+      else if (al.startsWith('path=')) parsed.path = a.replace(/^path=/i, '').trim();
+      else if (al.startsWith('domain=')) parsed.domain = a.replace(/^domain=/i, '').trim();
+      else if (al.startsWith('expires=')) parsed.expires = a.replace(/^expires=/i, '').trim();
+      else if (al.startsWith('max-age=')) parsed.maxAge = a.replace(/^max-age=/i, '').trim();
       parsed.flags.push(a);
     });
     return parsed;
   }
 
-  function getContext(parsed){
-    const siteUrl = document.getElementById('siteUrl').value.trim();
-    const cookieNames = document.getElementById('cookieCtx').value.split(/[,;，；]/).map(s => s.trim().toLowerCase()).filter(Boolean);
-    const cookieCritical = document.getElementById('cookieCritical').checked;
+  // ─── 上下文推断 ─────────────────────────────────────────────────
+  function getContext(parsed) {
+    const siteUrl = $('siteUrl').value.trim();
+    const cookieNames = $('cookieCtx').value.split(/[,;，；]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    const cookieCritical = $('cookieCritical').checked;
 
+    // 协议推断：优先用户填写；否则看是否出现 https 特征头
     let https = null;
-    if(siteUrl){
+    if (siteUrl) {
       https = /^https:/i.test(siteUrl);
-    } else if(parsed.map['strict-transport-security']){
-      https = true;
+    } else {
+      const map = parsed.map;
+      const hasHsts = !!map['strict-transport-security'];
+      const via = (map['via'] || []).join(' ');
+      const server = (map['server'] || []).join(' ');
+      // 有 HSTS 头或响应里出现 https 相关线索 → 大概率 HTTPS
+      if (hasHsts) https = true;
+      else if (/https|tls|ssl/i.test(via + ' ' + server)) https = null; // 证据不足
     }
 
+    // 是否有 Cookie
     const hasCookies = parsed.cookies.length > 0;
+    // 是否有指定/敏感 Cookie
     const specifiedCookies = parsed.cookies.filter(c => cookieNames.includes(c.name));
     const cookieSensitive = cookieCritical || specifiedCookies.length > 0;
 
     return { https, hasCookies, cookieSensitive, cookieNames, specifiedCookies, cookies: parsed.cookies, siteUrl };
   }
 
-  function buildFindings(parsed, ctx){
+  // ─── 检查项定义（每项：取当前值 → 结合上下文判定 → 生成发现）───
+  // severity 决定排序权重；status 决定徽章。
+  function buildFindings(parsed, ctx) {
     const map = parsed.map;
     const F = [];
     const h = (name) => map[name] ? map[name].join(' ; ') : null;
+    const has = (name) => map[name] ? map[name].join(' ; ') : null;
+
+    // helper：追加一条发现
     const add = (o) => F.push(o);
 
-    // 1) Content-Security-Policy
+    // 1) Content-Security-Policy：不能只看是否存在，还要看策略是否过宽
     {
       const csp = h('content-security-policy');
-      if(csp === null){
+      if (csp === null) {
         add({ key: 'csp', name: 'Content-Security-Policy', cat: 'headers', status: 'warn',
-          why: '未设置 CSP。CSP 可限制脚本来源，显著降低 XSS 危害面。是否必须取决于应用是否执行不可信内容，但对多数站点是基础防线。',
+          why: '未设置 CSP。CSP 可限制脚本来源，显著降低 XSS 危害面。是否必须取决于应用是否执行不可信内容——但对多数站点是基础防线。',
           advise: "Content-Security-Policy: default-src 'self'",
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'] });
-      } else if(/unsafe-inline/i.test(csp)){
-        add({ key: 'csp', name: 'Content-Security-Policy', cat: 'headers', status: 'warn', current: csp,
-          why: 'CSP 已设置，但包含 \'unsafe-inline\'（允许内联脚本）或通配符来源，会大幅削弱 XSS 防护效果。CSP 存在不等于 CSP 安全。',
-          advise: "移除 'unsafe-inline'，改用 nonce / hash 显式放行；避免通配符 *，按最小原则枚举来源。",
-          links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'] });
       } else {
-        add({ key: 'csp', name: 'Content-Security-Policy', cat: 'headers', status: 'ok', current: csp,
-          why: 'CSP 已设置且未使用 \'unsafe-inline\'，符合最小来源原则。仍需结合实际脚本来源确认策略没有误杀。',
-          links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'] });
+        const loose = /unsafe-inline/i.test(csp) || /unsafe-hashed/i.test(csp);
+        const allowAll = /default-src\s+'?none'?/.test(csp) === false && /(script-src|default-src)\s+[^\n]*\*/.test(csp);
+        if (loose) {
+          add({ key: 'csp', name: 'Content-Security-Policy', cat: 'headers', status: 'warn', current: csp,
+            why: 'CSP 已设置，但包含 \'unsafe-inline\'（允许内联脚本）或通配符来源，会大幅削弱 XSS 防护效果——CSP 存在不等于 CSP 安全。',
+            advise: "移除 'unsafe-inline'，改用 nonce / hash 显式放行；避免通配符 *，按最小原则枚举来源。",
+            links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'] });
+        } else {
+          add({ key: 'csp', name: 'Content-Security-Policy', cat: 'headers', status: 'ok', current: csp,
+            why: 'CSP 已设置且未使用 \'unsafe-inline\' / 通配符，符合最小来源原则。注意：仍需结合脚本实际来源确认策略没有误杀。',
+            links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'] });
+        }
       }
     }
 
-    // 2) Strict-Transport-Security
+    // 2) Strict-Transport-Security：结论强烈依赖是否 HTTPS
     {
       const hsts = h('strict-transport-security');
-      if(hsts === null){
-        if(ctx.https === false){
+      if (hsts === null) {
+        if (ctx.https === false) {
           add({ key: 'hsts', name: 'Strict-Transport-Security', cat: 'headers', status: 'na',
             why: '站点当前为 HTTP（未启用 HTTPS）。HSTS 仅在 HTTPS 部署下有意义：浏览器只在通过 TLS 到达时才会采纳 HSTS。先完成全站 HTTPS，再启用 HSTS。',
             advise: '先部署并启用全站 HTTPS，随后下发 HSTS。',
             links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security'] });
-        } else if(ctx.https === true){
+        } else if (ctx.https === true) {
           add({ key: 'hsts', name: 'Strict-Transport-Security', cat: 'headers', status: 'bad',
             why: '站点已启用 HTTPS 却未下发 HSTS，仍存在 HTTP 降级 / SSL 剥离攻击窗口。HTTPS 部署下 HSTS 属高危缺口。',
             advise: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
@@ -309,9 +405,9 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
       } else {
         const noInclude = !/includeSubDomains/i.test(hsts);
         const shortMax = (m => m && /^\d+$/.test(m) && (+m) < 31536000)(hsts.match(/max-age\s*=\s*(\d+)/i)?.[1]);
-        if(noInclude || shortMax){
+        if (noInclude || shortMax) {
           add({ key: 'hsts', name: 'Strict-Transport-Security', cat: 'headers', status: 'warn', current: hsts,
-            why: 'HSTS 已下发，但' + (noInclude ? '缺少 includeSubDomains（子域不受保护）' : '') + (noInclude && shortMax ? ' 且 ' : '') + (shortMax ? 'max-age 偏短（< 1 年）' : '') + '，防护窗口不足。',
+            why: `HSTS 已下发，但${noInclude ? '缺少 includeSubDomains（子域不受保护）' : ''}${noInclude && shortMax ? ' 且 ' : ''}${shortMax ? `max-age 偏短（< 1 年）` : ''}，防护窗口不足。`,
             advise: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
             links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security'] });
         } else {
@@ -322,15 +418,15 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
       }
     }
 
-    // 3) X-Content-Type-Options
+    // 3) X-Content-Type-Options（MIME 类型保护）
     {
       const xcto = h('x-content-type-options');
-      if(xcto === null){
+      if (xcto === null) {
         add({ key: 'mime', name: 'X-Content-Type-Options', cat: 'headers', status: 'warn',
-          why: '未设置 X-Content-Type-Options: nosniff，浏览器可能对响应做 MIME 嗅探，配合可执行内容类型时存在 sniffing 风险。',
+          why: '未设置 X-Content-Type-Options: nosniff，浏览器可能对响应做 MIME 嗅探，配合可执行 / 可被嵌入的内容类型时存在 sniffing 风险。',
           advise: 'X-Content-Type-Options: nosniff',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options'] });
-      } else if(!/nosniff/i.test(xcto)){
+      } else if (!/nosniff/i.test(xcto)) {
         add({ key: 'mime', name: 'X-Content-Type-Options', cat: 'headers', status: 'warn', current: xcto,
           why: '该头存在但值不是 nosniff（只有 nosniff 有效）。',
           advise: 'X-Content-Type-Options: nosniff',
@@ -345,14 +441,14 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
     // 4) Referrer-Policy
     {
       const rp = h('referrer-policy');
-      if(rp === null){
+      if (rp === null) {
         add({ key: 'referrer', name: 'Referrer-Policy', cat: 'headers', status: 'info',
           why: '未显式设置 Referrer-Policy。浏览器将按默认策略发送 Referrer，可能把含路径 / token 的 URL 泄露给第三方。是否要紧取决于是否会跨源跳转并携带敏感 URL。',
           advise: 'Referrer-Policy: strict-origin-when-cross-origin',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy'] });
       } else {
         add({ key: 'referrer', name: 'Referrer-Policy', cat: 'headers', status: 'ok', current: rp,
-          why: '已显式设置 Referrer-Policy。核对策略是否过宽（no-referrer-when-downgrade / always 仍会把 origin 发给降级场景）。',
+          why: '已显式设置 Referrer-Policy。核对策略是否过宽（no-referrer-when-downgrade / always 仍会把 origin 发给 HTTPS 降级场景）。',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy'] });
       }
     }
@@ -360,7 +456,7 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
     // 5) Permissions-Policy
     {
       const pp = h('permissions-policy');
-      if(pp === null){
+      if (pp === null) {
         add({ key: 'permissions', name: 'Permissions-Policy', cat: 'headers', status: 'info',
           why: '未设置 Permissions-Policy。若页面不使用 camera / microphone / geolocation / payment 等敏感能力，显式关闭可缩小攻击面。是否必须取决于是否嵌入 <iframe> 或使用这些能力。',
           advise: 'Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self)',
@@ -372,22 +468,22 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
       }
     }
 
-    // 6) 点击劫持防护
+    // 6) X-Frame-Options / 同源嵌入防护（框架化防御）
     {
       const xfo = h('x-frame-options');
       const fcp = h('content-security-policy');
       const fcpFrameAncestors = fcp ? fcp.match(/frame-ancestors[^;]*/i) : null;
-      if(xfo === null && !fcpFrameAncestors){
+      if (xfo === null && !fcpFrameAncestors) {
         add({ key: 'clickjack', name: 'X-Frame-Options / CSP frame-ancestors', cat: 'headers', status: 'warn',
           why: '未设置 X-Frame-Options，CSP 中也没有 frame-ancestors，页面可被任意第三方用 <iframe> 嵌套，存在点击劫持（clickjacking）风险。若页面本就需要被嵌入，则应改为白名单。',
           advise: "X-Frame-Options: DENY   （或 CSP: frame-ancestors 'self'）",
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options', 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors'] });
-      } else if(xfo && !/DENY|SAMEORIGIN/i.test(xfo)){
+      } else if (xfo && !/DENY|SAMEORIGIN|ALLOW-FROM/i.test(xfo)) {
         add({ key: 'clickjack', name: 'X-Frame-Options', cat: 'headers', status: 'warn', current: xfo,
           why: 'X-Frame-Options 值非 DENY / SAMEORIGIN（ALLOW-FROM 已被各浏览器弃用），实际不生效。',
           advise: "X-Frame-Options: DENY 或 SAMEORIGIN；跨域信任嵌入用 CSP frame-ancestors 白名单。",
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options'] });
-      } else if(fcpFrameAncestors && !/frame-ancestors\s+'none'/i.test(fcpFrameAncestors[0])){
+      } else if (fcpFrameAncestors && !/frame-ancestors\s+'none'/i.test(fcpFrameAncestors[0])) {
         add({ key: 'clickjack', name: 'CSP frame-ancestors', cat: 'headers', status: 'warn', current: fcpFrameAncestors[0],
           why: 'CSP frame-ancestors 允许了来源，核对白名单是否过宽（* 等于完全放开）。',
           advise: "收紧 frame-ancestors：'none'（禁止嵌入）或明确站点白名单。",
@@ -400,80 +496,86 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
       }
     }
 
-    // 7) Cookie 属性检查（Secure / HttpOnly / SameSite）
+    // 7) Cookie 属性检查（Secure / HttpOnly / SameSite）—— 依据是否承载敏感 Cookie 定级
     {
       const base = ctx.cookieSensitive ? 'bad' : 'warn';
       const specNote = ctx.specifiedCookies.length
-        ? ' 关注 Cookie：' + ctx.specifiedCookies.map(c => c.name).join(', ') + '。'
+        ? ` 关注 Cookie：${ctx.specifiedCookies.map(c => c.name).join(', ')}。`
         : (ctx.cookieCritical ? ' 已标记为承载敏感 Cookie。' : '');
       const names = ctx.cookies.map(c => c.name).filter(Boolean).join(', ') || '（未解析到 Set-Cookie）';
 
+      // Secure
       const secMissing = ctx.cookies.filter(c => !c.secure);
-      if(secMissing.length === 0 && ctx.cookies.length){
+      if (secMissing.length === 0 && ctx.cookies.length) {
         add({ key: 'cookie-secure', name: 'Cookie: Secure', cat: 'cookies', status: 'ok',
-          current: names, why: '全部 Set-Cookie 均带 Secure，Cookie 只在 HTTPS 下发送。' + specNote,
+          current: names, why: `全部 Set-Cookie 均带 Secure，Cookie 只在 HTTPS 下发送。${specNote}`,
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/Secure'] });
       } else {
         const lst = secMissing.map(c => c.name).join(', ');
         add({ key: 'cookie-secure', name: 'Cookie: Secure', cat: 'cookies',
           status: ctx.https === false ? 'info' : base,
-          current: secMissing.length ? '缺少 Secure：' + lst : '未解析到 Set-Cookie',
-          why: (secMissing.length ? 'Cookie ' + lst + ' 未带 Secure 属性。' : '未解析到 Set-Cookie。')
-            + (ctx.https === false
+          current: secMissing.length ? `缺少 Secure：${lst}` : names,
+          why: (secMissing.length
+            ? `Cookie ${lst} 未带 Secure 属性。`
+            : '未解析到 Set-Cookie。') +
+            (ctx.https === false
               ? ' 站点为 HTTP 时无从启用 Secure，先迁移 HTTPS。'
               : ' 未带 Secure 的 Cookie 会在明文 HTTP 下被截获；会话 / 敏感 Cookie 必须带 Secure。') + specNote,
           advise: '为敏感 Cookie 追加 Secure；全站启用 HTTPS 后统一下发。',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/Secure'] });
       }
 
+      // HttpOnly
       const hoMissing = ctx.cookies.filter(c => !c.httpOnly);
-      if(hoMissing.length === 0 && ctx.cookies.length){
+      if (hoMissing.length === 0 && ctx.cookies.length) {
         add({ key: 'cookie-httponly', name: 'Cookie: HttpOnly', cat: 'cookies', status: 'ok',
-          current: names, why: '全部 Set-Cookie 均带 HttpOnly，JS 无法读取，降低 XSS 窃取 Cookie 的风险。' + specNote,
+          current: names, why: `全部 Set-Cookie 均带 HttpOnly，JS 无法读取，降低 XSS 窃取 Cookie 的风险。${specNote}`,
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/HttpOnly_attribute'] });
       } else {
         const lst = hoMissing.map(c => c.name).join(', ');
         add({ key: 'cookie-httponly', name: 'Cookie: HttpOnly', cat: 'cookies',
           status: ctx.cookies.length ? base : 'na',
-          current: hoMissing.length ? '缺少 HttpOnly：' + lst : '未解析到 Set-Cookie',
-          why: (hoMissing.length ? 'Cookie ' + lst + ' 未带 HttpOnly，' : '未解析到 Set-Cookie。')
-            + ' 不带 HttpOnly 的 Cookie 可被同源 JS 读取，若同时存在 XSS 即可能被拖走。'
-            + (ctx.cookieSensitive ? ' 该 Cookie 承载敏感信息，应带 HttpOnly。' : ' 若不承载会话，可保持普通 Cookie。') + specNote,
+          current: hoMissing.length ? `缺少 HttpOnly：${lst}` : '未解析到 Set-Cookie',
+          why: (hoMissing.length ? `Cookie ${lst} 未带 HttpOnly，` : '未解析到 Set-Cookie。') +
+            ' 不带 HttpOnly 的 Cookie 可被同源 JS 读取——若同时存在 XSS 即可能被拖走。' +
+            (ctx.cookieSensitive ? ' 该 Cookie 承载敏感信息，应带 HttpOnly。' : ' 若不承载会话，可保持普通 Cookie。') + specNote,
           advise: '为会话 / 鉴权 Cookie 追加 HttpOnly。',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/HttpOnly_attribute'] });
       }
 
+      // SameSite
       const ssMissing = ctx.cookies.filter(c => !c.samesite || c.samesite === 'none');
-      if(ssMissing.length === 0 && ctx.cookies.length){
+      if (ssMissing.length === 0 && ctx.cookies.length) {
         add({ key: 'cookie-samesite', name: 'Cookie: SameSite', cat: 'cookies', status: 'ok',
-          current: names, why: '全部 Set-Cookie 均设置同站策略（非 None），可缓解 CSRF。' + specNote,
+          current: names, why: `全部 Set-Cookie 均设置同站策略（非 None），可缓解 CSRF。${specNote}`,
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/SameSite'] });
       } else {
         const lst = ssMissing.map(c => c.name).join(', ');
         add({ key: 'cookie-samesite', name: 'Cookie: SameSite', cat: 'cookies',
           status: ctx.cookies.length ? (ctx.cookieSensitive ? 'bad' : 'warn') : 'na',
-          current: ssMissing.length ? '缺少 / SameSite=None：' + lst : '未解析到 Set-Cookie',
-          why: (ssMissing.length ? 'Cookie ' + lst + ' 未设置 SameSite 或设为 None，' : '未解析到 Set-Cookie。')
-            + ' 第三方站点发起的请求仍会携带该 Cookie，增大 CSRF 面。'
-            + (ctx.cookieSensitive ? ' 承载敏感信息的 Cookie 建议至少 SameSite=Lax。' : ' 若只是非敏感偏好类 Cookie，优先级较低。') + specNote,
+          current: ssMissing.length ? `缺少 / SameSite=None：${lst}` : '未解析到 Set-Cookie',
+          why: (ssMissing.length ? `Cookie ${lst} 未设置 SameSite 或设为 None，` : '未解析到 Set-Cookie。') +
+            ' 第三方站点发起的请求仍会携带该 Cookie，增大 CSRF 面。' +
+            (ctx.cookieSensitive ? ' 承载敏感信息的 Cookie 建议至少 SameSite=Lax。' : ' 若只是非敏感偏好类 Cookie，优先级较低。') + specNote,
           advise: 'SameSite=Lax（或 Strict）；确需跨站携带时再评估 None + Secure。',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Attributes/SameSite'] });
       }
     }
 
-    // 8) 其它补充
+    // 8) 其它补充（信息级，避免喧宾夺主）
     {
       const cache = h('cache-control');
-      if(cache === null && ctx.hasCookies){
+      if (cache === null && ctx.hasCookies) {
         add({ key: 'cache', name: 'Cache-Control（缓存）', cat: 'misc', status: 'info',
           why: '响应携带 Cookie 但未设置 Cache-Control。含用户态的响应建议显式 no-store / private，避免被中间层或浏览器缓存留存。',
           advise: 'Cache-Control: no-store, no-cache, must-revalidate（含用户态的响应）',
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control'] });
       }
-      if(h('x-xss-protection') === null){
+      const xss = h('x-xss-protection');
+      if (xss === null) {
         add({ key: 'xss', name: 'X-XSS-Protection', cat: 'misc', status: 'info',
           why: '未设置 X-XSS-Protection。现代浏览器已弃用该头，主防线应是 CSP + 严格输入输出处理；此项仅作提示，不强制。',
-          advise: 'X-XSS-Protection: 0（显式关闭旧嗅探过滤，配合 CSP 使用）',
+          advise: "X-XSS-Protection: 0（显式关闭旧嗅探过滤，配合 CSP 使用）",
           links: ['https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection'] });
       }
     }
@@ -481,43 +583,74 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
     return F;
   }
 
-  // ─── 审计 ────────────────────────────────────────────────────────
-  function runAudit(){
-    const text = document.getElementById('headerIn').value;
-    if(!text.trim()){
-      switchToTab('input');
-      alert('请先粘贴响应头');
-      return;
-    }
+  // ─── 会话状态 ────────────────────────────────────────────────────
+  let STATE = { findings: [], raw: '', parsed: null, ctx: null, filter: 'all' };
+
+  function runAudit() {
+    const text = $('headerIn').value;
+    if (!text.trim()) { showToast('⚠️ 请先粘贴响应头'); return; }
     STATE.raw = text;
     STATE.parsed = parseHeaders(text);
     STATE.ctx = getContext(STATE.parsed);
     STATE.findings = buildFindings(STATE.parsed, STATE.ctx);
     STATE.findings.sort((a, b) => (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]));
     STATE.filter = 'all';
-    renderResults();
-    switchToTab('result');
+    render();
+    showToast('✅ 已审计 ' + STATE.findings.length + ' 项检查');
   }
 
-  function renderResults(){
-    const F = STATE.findings;
-    const info = document.getElementById('resultInfo');
-    const summaryBox = document.getElementById('summaryBox');
-    const resultBox = document.getElementById('resultBox');
-    const tabsBox = document.getElementById('resultTabs');
+  function loadSample() {
+    $('headerIn').value =
+`HTTP/1.1 200 OK
+Server: nginx/1.24.0
+Content-Type: text/html; charset=UTF-8
+Content-Security-Policy: default-src 'self' 'unsafe-inline'; script-src 'self' cdn.example.com
+Strict-Transport-Security: max-age=300
+X-Frame-Options: DENY
+Set-Cookie: session=eyJhbGciOiJIUzI1NiJ9; Path=/; Secure; HttpOnly; SameSite=Strict
+Set-Cookie: theme=dark; Path=/; Expires=Wed, 01 Jan 2030 00:00:00 GMT
+Referrer-Policy: no-referrer
+`;
+    // 默认示例上下文：HTTPS + 敏感 Cookie
+    $('siteUrl').value = 'https://app.example.com/';
+    $('cookieCtx').value = 'session';
+    $('cookieCritical').checked = true;
+    showToast('🧪 示例已载入（HTTPS + 会话 Cookie）');
+  }
 
-    if(!F.length){
-      info.textContent = '尚未审计';
-      summaryBox.style.display = 'none';
-      tabsBox.style.display = 'none';
-      resultBox.innerHTML = '<div class="empty-state"><div>尚未审计，请在「输入响应头」中粘贴响应头后点击开始审计</div></div>';
-      return;
+  function clearAll() {
+    $('headerIn').value = '';
+    STATE.findings = [];
+    STATE.parsed = null;
+    STATE.ctx = null;
+    render();
+  }
+
+  // 导入脱敏文本文件（本地读取，不上网）
+  $('fileInput').addEventListener('change', async () => {
+    const f = $('fileInput').files[0];
+    if (!f) return;
+    try {
+      $('headerIn').value = await f.text();
+      showToast('📂 已导入 ' + f.name + '，点击「开始审计」');
+    } catch (e) {
+      showToast('⚠️ 文件读取失败：' + e.message);
     }
+  });
 
+  // ─── 渲染 ────────────────────────────────────────────────────────
+  function render() {
+    renderSummary();
+    renderChips();
+    renderFindings();
+  }
+
+  function renderSummary() {
+    const F = STATE.findings;
+    if (!F.length) { $('summaryBox').innerHTML = ''; return; }
     const cnt = { ok: 0, warn: 0, bad: 0, na: 0, info: 0 };
     F.forEach(f => cnt[f.status]++);
-    summaryBox.style.display = 'block';
-    summaryBox.innerHTML =
+    $('summaryBox').innerHTML =
       '<div class="summary">'
       + stat(cnt.bad, 'bad', '未达标')
       + stat(cnt.warn, 'warn', '需关注')
@@ -525,78 +658,64 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
       + stat(cnt.ok, 'ok', '已达标')
       + stat(cnt.na, 'na', '不适用')
       + '</div>';
+  }
+  function stat(n, cls, label) {
+    return '<div class="stat stat-' + cls + '"><b>' + n + '</b><span>' + label + '</span></div>';
+  }
 
-    info.textContent = '共 ' + F.length + ' 项检查 · 站点 ' + (STATE.ctx.siteUrl || '（未填写）') + ' · 协议 '
-      + (STATE.ctx.https === true ? 'HTTPS（推断）' : STATE.ctx.https === false ? 'HTTP' : '未知');
-
+  function renderChips() {
     const opts = [['all', '全部'], ['bad', '未达标'], ['warn', '需关注'], ['info', '建议'], ['ok', '已达标'], ['na', '不适用']];
-    tabsBox.style.display = 'flex';
-    tabsBox.innerHTML = opts.map(([k, l]) =>
-      '<button class="res-tab' + (STATE.filter === k ? ' active' : '') + '" data-f="' + k + '">' + l + '</button>').join('');
-    tabsBox.querySelectorAll('.res-tab').forEach(btn => {
-      btn.addEventListener('click', () => { STATE.filter = btn.dataset.f; renderResults(); });
+    $('chips').innerHTML = opts.map(([k, l]) =>
+      '<span class="chip' + (STATE.filter === k ? ' active' : '') + '" data-f="' + k + '">' + l + '</span>').join('');
+    $('chips').querySelectorAll('.chip').forEach(el => {
+      el.addEventListener('click', () => { STATE.filter = el.dataset.f; renderChips(); renderFindings(); });
     });
+  }
 
-    const shown = STATE.filter === 'all' ? F : F.filter(f => f.status === STATE.filter);
-    if(!shown.length){
-      resultBox.innerHTML = '<div class="empty-state"><div>该筛选下暂无发现</div></div>';
+  function renderFindings() {
+    const F = STATE.filter === 'all' ? STATE.findings : STATE.findings.filter(f => f.status === STATE.filter);
+    if (!F.length) {
+      $('resultBox').innerHTML = '<div class="empty">该筛选下暂无发现</div>';
       return;
     }
-    resultBox.innerHTML = shown.map(f => {
+    $('resultBox').innerHTML = F.map(f => {
       const currentBlock = f.current !== undefined
         ? (f.current ? '<div class="f-current">' + esc(f.current) + '</div>' : '<div class="f-current missing">（该头未出现在响应中）</div>')
         : '';
-      const adviseBlock = f.advise ? '<div class="f-sec"><span class="lbl">建议配置（点击复制）</span><pre class="copy-advise">' + esc(f.advise) + '</pre></div>' : '';
-      const links = f.links ? '<div class="f-links">' + f.links.map(u => '<a href="' + esc(u) + '" target="_blank" rel="noopener">参考文档</a>').join('') + '</div>' : '';
+      const adviseBlock = f.advise ? '<div class="f-sec"><span class="lbl">建议配置（点击复制）</span><pre onclick="copyText(this.textContent)">' + esc(f.advise) + '</pre></div>' : '';
+      const links = f.links ? '<div class="f-links">' + f.links.map(u => '<a href="' + esc(u) + '" target="_blank" rel="noopener">📎 ' + esc(u.replace(/^https?:\/\//, '')) + '</a>').join('') + '</div>' : '';
       return '<div class="finding" data-status="' + f.status + '">'
         + '<div class="f-top"><span class="f-name">' + esc(f.name) + '</span>'
         + '<span class="f-cat">' + (CATEGORY[f.cat] || f.cat) + '</span>'
         + '<span class="badge">' + STATUS_LABEL[f.status] + '</span></div>'
         + currentBlock
-        + '<div class="f-sec"><span class="lbl">判断依据</span>' + esc(f.why) + '</div>'
+        + '<div class="f-sec"><span class="lbl">判断依据</span><span class="why">' + esc(f.why) + '</span></div>'
         + adviseBlock
-        + '<div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">参考：' + (f.links ? f.links.map(u => u.replace(/^https?:\/\//, '')).join(' · ') : '无') + '</div>'
+        + links
         + '</div>';
     }).join('');
-    resultBox.querySelectorAll('.copy-advise').forEach(pre => {
-      pre.addEventListener('click', () => {
-        navigator.clipboard.writeText(pre.textContent).then(() => {
-          const fb = document.getElementById('copyFeedback');
-          fb.style.display = 'block';
-          setTimeout(() => fb.style.display = 'none', 2000);
-        }).catch(() => alert('复制失败，请手动复制'));
-      });
-    });
-  }
-
-  function stat(n, cls, label){
-    return '<div class="stat stat-' + cls + '"><b>' + n + '</b><span>' + label + '</span></div>';
-  }
-
-  function esc(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   // ─── 导出 Markdown / JSON ────────────────────────────────────────
-  function buildMarkdown(){
+  function buildMarkdown() {
     const lines = ['# HeaderScope 审计报告', '生成时间: ' + new Date().toLocaleString('zh-CN', { hour12: false })];
-    if(STATE.ctx.siteUrl) lines.push('站点: ' + STATE.ctx.siteUrl);
-    if(STATE.ctx.https === true) lines.push('协议: HTTPS（由 HSTS / 线索推断）');
-    else if(STATE.ctx.https === false) lines.push('协议: HTTP（未启用 HTTPS）');
+    if (STATE.ctx.siteUrl) lines.push('站点: ' + STATE.ctx.siteUrl);
+    if (STATE.ctx.https === true) lines.push('协议: HTTPS（由 HSTS / 线索推断）');
+    else if (STATE.ctx.https === false) lines.push('协议: HTTP（未启用 HTTPS）');
     lines.push('');
     lines.push('## 发现明细');
     STATE.findings.forEach(f => {
       lines.push('### ' + STATUS_LABEL[f.status] + ' · ' + f.name);
-      if(f.current) lines.push('- 当前值: `' + f.current + '`');
+      if (f.current) lines.push('- 当前值: `' + f.current + '`');
       lines.push('- 依据: ' + f.why);
-      if(f.advise) lines.push('- 建议: `' + f.advise + '`');
-      if(f.links) lines.push('- 参考: ' + f.links.map(u => '<' + u + '>').join(' '));
+      if (f.advise) lines.push('- 建议: `' + f.advise + '`');
+      if (f.links) lines.push('- 参考: ' + f.links.map(u => '<' + u + '>').join(' '));
       lines.push('');
     });
     return lines.join('\n');
   }
 
-  function buildJson(){
+  function buildJson() {
     return JSON.stringify({
       generatedAt: new Date().toISOString(),
       siteUrl: STATE.ctx.siteUrl || null,
@@ -607,85 +726,25 @@ Referrer-Policy: strict-origin-when-cross-origin"></textarea>
     }, null, 2);
   }
 
-  function download(content, filename, mime){
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
+  function exportReport(kind) {
+    if (!STATE.findings.length) { showToast('⚠️ 尚无审计结果'); return; }
+    const text = kind === 'json' ? buildJson() : buildMarkdown();
+    const mime = kind === 'json' ? 'application/json' : 'text/markdown';
+    const fname = 'headerscope-report.' + (kind === 'json' ? 'json' : 'md');
     const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+    a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+    a.download = fname;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    showToast('📄 已导出 ' + fname);
   }
 
-  // ─── 事件绑定 ────────────────────────────────────────────────────
-  function switchToTab(name){
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    const btn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
-    if(btn) btn.classList.add('active');
-    document.getElementById('tab-' + name).classList.add('active');
-  }
+  // ─── 主题：DataForge 中性浅色配色（无暗色切换）────────────────
 
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
+  // 回车快速审计（在 textarea 中 Ctrl/Cmd+Enter）
+  $('headerIn').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAudit();
   });
-
-  document.getElementById('runBtn').addEventListener('click', runAudit);
-  document.getElementById('headerIn').addEventListener('keydown', e => {
-    if((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAudit();
-  });
-
-  document.getElementById('exportMd').addEventListener('click', () => {
-    if(!STATE.findings.length){ alert('尚无审计结果'); return; }
-    download(buildMarkdown(), 'headerscope-report.md', 'text/markdown');
-  });
-  document.getElementById('exportJson').addEventListener('click', () => {
-    if(!STATE.findings.length){ alert('尚无审计结果'); return; }
-    download(buildJson(), 'headerscope-report.json', 'application/json');
-  });
-
-  document.getElementById('sampleBtn').addEventListener('click', () => {
-    document.getElementById('headerIn').value =
-`HTTP/1.1 200 OK
-Server: nginx/1.24.0
-Content-Type: text/html; charset=UTF-8
-Content-Security-Policy: default-src 'self' 'unsafe-inline'; script-src 'self' cdn.example.com
-Strict-Transport-Security: max-age=300
-X-Frame-Options: DENY
-Set-Cookie: session=eyJhbGciOiJIUzI1NiJ9; Path=/; Secure; HttpOnly; SameSite=Strict
-Set-Cookie: theme=dark; Path=/; Expires=Wed, 01 Jan 2030 00:00:00 GMT
-Referrer-Policy: no-referrer`;
-    document.getElementById('siteUrl').value = 'https://app.example.com/';
-    document.getElementById('cookieCtx').value = 'session';
-    document.getElementById('cookieCritical').checked = true;
-    switchToTab('input');
-    alert('示例已载入（HTTPS + 会话 Cookie），请确认上下文后点击开始审计');
-  });
-
-  document.getElementById('clearBtn').addEventListener('click', () => {
-    document.getElementById('headerIn').value = '';
-    document.getElementById('siteUrl').value = '';
-    document.getElementById('cookieCtx').value = '';
-    document.getElementById('cookieCritical').checked = false;
-    STATE = { findings: [], raw: '', parsed: null, ctx: null, filter: 'all' };
-    renderResults();
-    switchToTab('input');
-  });
-
-  document.getElementById('fileInput').addEventListener('change', function(e){
-    const f = e.target.files[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      document.getElementById('headerIn').value = ev.target.result;
-      switchToTab('input');
-      alert('已导入 ' + f.name + '，请确认上下文后点击开始审计');
-    };
-    reader.readAsText(f);
-    e.target.value = '';
-  });
-
-  renderResults();
-})();
-</script>
+  </script>
 </body>
 </html>

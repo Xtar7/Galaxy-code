@@ -1,395 +1,405 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HashDock — 文件哈希计算与完整性复核</title>
-<style>
-:root {
-  --text-primary: #1a1a1a; --text-secondary: #4a4a4a; --text-tertiary: #8a8a8a;
-  --text-quaternary: #b0b0b0; --surface: #ffffff; --surface-muted: #f5f5f5;
-  --border: #e0e0e0; --danger: #dc3545; --positive: #28a745; --warning: #f0ad4e;
-  --info: #17a2b8; --neutral: #8a8a8a;
-  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
-  --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
-  --font-mono: "SF Mono","Fira Code",Consolas,monospace;
-}
-* { box-sizing: border-box; margin:0; padding:0; }
-body { font-family: var(--font-sans); margin:0; padding:0; background:var(--surface-muted); color:var(--text-primary); font-size:15px; line-height:1.5; }
-.container { max-width:1400px; margin:0 auto; padding:24px 16px; }
-.header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-.header-title { font-size:22px; font-weight:600; }
-.header-sub { font-size:13px; color:var(--text-tertiary); margin-top:2px; }
-.btn-primary { background:var(--text-primary); color:var(--surface); border:none; padding:9px 18px; border-radius:var(--radius-lg); font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-secondary { background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); padding:6px 12px; border-radius:var(--radius-md); font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
-.btn-small { padding:4px 10px; font-size:12px; }
-.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:16px; margin-bottom:16px; }
-.card-title { font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:10px; }
-.card-desc { font-size:13px; color:var(--text-tertiary); margin:-6px 0 10px; }
-.tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; flex-wrap:wrap; }
-.tab-btn { padding:10px 16px; font-size:14px; border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; color:var(--text-tertiary); font-weight:500; }
-.tab-btn.active { color:var(--text-primary); border-bottom-color:var(--text-primary); }
-.tab-content { display:none; } .tab-content.active { display:block; }
-.note { display:flex; align-items:flex-start; gap:8px; padding:10px 14px; border-radius:var(--radius-lg); background:rgba(240,173,78,0.1); color:#8a5c0a; font-size:13px; border:1px solid rgba(240,173,78,0.35); }
-.file-drop { padding:14px; border:1px dashed var(--border); border-radius:var(--radius-lg); background:var(--surface-muted); text-align:center; cursor:pointer; color:var(--text-secondary); font-size:14px; }
-.file-drop:hover { border-color:var(--text-primary); }
-.progress { font-size:13px; color:var(--text-tertiary); margin-top:8px; min-height:18px; }
-textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-lg); font-size:13px; background:var(--surface); color:var(--text-primary); resize:vertical; font-family:var(--font-mono); }
-.summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.stat { flex:1; min-width:80px; text-align:center; border:1px solid var(--border); border-radius:var(--radius-lg); padding:10px 6px; background:var(--surface-muted); }
-.stat b { display:block; font-size:20px; line-height:1.2; }
-.stat span { font-size:11px; color:var(--text-tertiary); }
-.stat-ok b { color:var(--positive); } .stat-bad b { color:var(--danger); }
-.stat-miss b { color:var(--warning); } .stat-err b { color:var(--danger); }
-.results-table-wrap { overflow:auto; max-height:480px; border:1px solid var(--border); border-radius:var(--radius-lg); }
-.results-table { width:100%; border-collapse:collapse; font-size:13px; }
-.results-table th { position:sticky; top:0; background:var(--surface-muted); padding:9px 12px; text-align:left; font-size:12px; font-weight:500; color:var(--text-secondary); border-bottom:1px solid var(--border); white-space:nowrap; z-index:1; }
-.results-table td { padding:8px 12px; color:var(--text-primary); border-bottom:1px solid var(--border); }
-.results-table td.hash { cursor:pointer; word-break:break-all; max-width:340px; font-family:var(--font-mono); font-size:12px; }
-.results-table td.hash:hover { color:var(--info); }
-.st-ok { color:var(--positive); font-weight:600; }
-.st-bad { color:var(--danger); font-weight:600; }
-.st-miss { color:var(--warning); }
-.st-none { color:var(--text-quaternary); }
-.empty-state { padding:60px; text-align:center; color:var(--text-quaternary); }
-.cli-block { background:var(--surface-muted); border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px; font-family:var(--font-mono); font-size:13px; white-space:pre-wrap; word-break:break-all; color:var(--text-secondary); cursor:pointer; }
-.cli-block:hover { border-color:var(--text-primary); }
-.cli-label { font-size:13px; color:var(--text-secondary); margin:10px 0 6px; }
-.feedback { display:none; padding:10px 14px; border-radius:var(--radius-md); background:rgba(40,167,69,0.1); color:var(--positive); font-size:13px; text-align:center; margin-top:10px; }
-@media(max-width:640px){ .header{flex-direction:column;align-items:flex-start;} .summary{flex-wrap:wrap;} }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HashDock · 文件完整性校验</title>
+  <!-- 内联 SVG favicon：暖炭底 + 落日橙盾牌 + 勾选（零额外文件，离线可用） -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231a1a1a'/><path d='M32 6 L54 14 V31 C54 45 44 55 32 59 C20 55 10 45 10 31 V14 Z' fill='%2328a745'/><polyline points='22,30 30,38 42,24' fill='none' stroke='%231a1a1a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <style>
+    /* ─── 主题令牌：DataForge 中性浅色配色（无暗色切换） ─── */
+    :root {
+      --text: #1a1a1a; --text-dim: #4a4a4a; --text-muted: #8a8a8a;
+      --bg: #f5f5f5; --surface: #ffffff; --surface2: #f5f5f5;
+      --code-bg: #f5f5f5; --border: #e0e0e0;
+      --accent: #1a1a1a; --accent2: #28a745; --accent3: #f0ad4e;
+      --danger: #dc3545;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 13px; line-height: 1.55;
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .mono { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; }
+
+    header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface); flex-shrink: 0;
+    }
+    header h1 { font-size: 15px; font-weight: 700; }
+    header .tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 10px;
+      border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .theme-toggle { display: none; }
+
+    /* ─── 布局：左右双栏 ─── */
+    .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; }
+    .col { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+    .col + .col { border-left: 1px solid var(--border); }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .panel-head {
+      display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;
+    }
+    .panel-head h2 { font-size: 13px; font-weight: 700; }
+    .panel-head .hint { font-size: 11px; color: var(--text-dim); }
+    .panel-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+
+    .banner {
+      font-size: 11px; color: var(--text-dim);
+      background: color-mix(in srgb, var(--accent3) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent3) 35%, transparent);
+      border-radius: 6px; padding: 8px 10px; margin-bottom: 14px;
+    }
+
+    input[type="file"] {
+      width: 100%; font-size: 12px; color: var(--text-dim);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px;
+    }
+    textarea {
+      width: 100%; font-size: 12px; color: var(--text);
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px; resize: vertical;
+      font-family: 'Cascadia Code', Consolas, monospace;
+    }
+    textarea:focus, input[type="file"]:focus { outline: none; border-color: var(--accent); }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+    .btn {
+      padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text-dim);
+      font-family: inherit; transition: all 0.12s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
+    .btn-primary:hover { filter: brightness(1.15); color: #ffffff; }
+    .btn-wide { flex: 1; text-align: center; }
+
+    /* ─── 结果表 ─── */
+    table.results { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table.results th {
+      font-size: 10px; color: var(--text-muted); text-align: left;
+      padding: 4px 6px; border-bottom: 1px solid var(--border);
+    }
+    table.results td {
+      font-size: 11px; padding: 5px 6px; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+      vertical-align: top;
+    }
+    td.hash { cursor: pointer; word-break: break-all; max-width: 320px; }
+    td.hash:hover { color: var(--accent); }
+    .st-ok { color: var(--accent2); font-weight: 600; }
+    .st-bad { color: var(--danger); font-weight: 600; }
+    .st-miss { color: var(--accent3); }
+    .st-none { color: var(--text-muted); }
+    .empty { font-size: 12px; color: var(--text-muted); padding: 14px 0; text-align: center; }
+
+    .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+    .summary .stat {
+      flex: 1; min-width: 90px; text-align: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 4px;
+    }
+    .summary .stat b { display: block; font-size: 18px; }
+    .summary .stat span { font-size: 10px; color: var(--text-dim); }
+    .stat-s .b { color: var(--accent2); } .stat-b .b { color: var(--danger); }
+    .stat-m .b { color: var(--accent3); }
+
+    pre.cli {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px; font-size: 11px;
+      font-family: 'Cascadia Code', Consolas, monospace;
+      white-space: pre-wrap; word-break: break-all; cursor: pointer; color: var(--text-dim);
+    }
+    pre.cli:hover { border-color: var(--accent); color: var(--text); }
+
+    .progress { font-size: 11px; color: var(--text-dim); margin-top: 8px; min-height: 15px; }
+
+    #toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #ffffff; font-size: 12px; font-weight: 600;
+      padding: 7px 18px; border-radius: 20px; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; z-index: 99;
+    }
+    #toast.show { opacity: 1; }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; height: auto; }
+      .layout { grid-template-columns: 1fr; }
+      .col + .col { border-left: none; border-top: 1px solid var(--border); }
+    }
+  </style>
 </head>
 <body>
-<div class="container">
+  <header>
+    <span style="font-size:18px">🧾</span>
+    <h1>HashDock · 文件完整性校验</h1>
+    <span class="tag">SHA-256 清单工具</span>
+    <span class="tag">Web 版 · 浏览器加密 API</span>
+  </header>
 
-<div class="header">
-  <div>
-    <div class="header-title">HashDock · 文件完整性校验</div>
-    <div class="header-sub">单文件 / 批量 SHA-256 计算、清单导入导出、前后哈希比较 — 纯浏览器运行，不上传、不请求网络</div>
-  </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;">
-    <button id="exportManifestBtn" class="btn-secondary">导出清单</button>
-    <button id="exportSummaryBtn" class="btn-secondary">导出汇总 TSV</button>
-  </div>
-</div>
+  <div class="layout">
+    <!-- ── 左栏：计算与基准 ── -->
+    <div class="col">
+      <div class="banner">⚠️ 哈希相同可以支持文件内容一致性的判断，但不能单独证明文件来源可信或文件从未被篡改；可信基准和清单本身也需要保护（离线存放、签名、双人保管等）。</div>
 
-<div class="note">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <span>哈希相同可以支持文件内容一致性的判断，但<b>不能单独证明文件来源可信或文件从未被篡改</b>；可信基准和清单本身也需要保护（离线存放、独立渠道分发、签名、双人保管等）。</span>
-</div>
+      <div class="panel">
+        <div class="panel-head"><h2>📁 文件哈希计算</h2><span class="hint">单文件 / 批量 · 256KiB 分块读取</span></div>
+        <div class="panel-desc">选择文件后立即计算 SHA-256（Web Crypto，全程本地，不上传）。</div>
+        <input type="file" id="fileInput" multiple>
+        <div class="progress" id="progress"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-wide" onclick="startCompute()">▶️ 计算哈希</button>
+          <button class="btn" onclick="exportManifest()">📦 导出清单</button>
+          <button class="btn" onclick="exportSummary()">🧮 导出汇总 TSV</button>
+        </div>
+        <div id="fileList" style="margin-top:10px"></div>
+      </div>
 
-<div class="tabs">
-  <button class="tab-btn active" data-tab="compute">文件哈希计算</button>
-  <button class="tab-btn" data-tab="manifest">清单导入 / 导出</button>
-  <button class="tab-btn" data-tab="baseline">前后基线</button>
-  <button class="tab-btn" data-tab="result">校验结果与前后对比</button>
-  <button class="tab-btn" data-tab="cli">本地版 / 命令行参考</button>
-</div>
+      <div class="panel">
+        <div class="panel-head"><h2>📋 清单导入 / 导出（基准）</h2><span class="hint">sha256sum 双空格格式</span></div>
+        <div class="panel-desc">导入既有清单作为对比基准；「导出清单」产物即可被 <span class="mono">sha256sum -c</span> 直接复核。</div>
+        <input type="file" id="manifestInput" accept=".txt,.sha256">
+        <div class="btn-row">
+          <button class="btn" onclick="document.getElementById('manifestIn').focus()">✏️ 或粘贴下方</button>
+          <button class="btn" onclick="importManifestFromText()">✔ 粘贴导入</button>
+          <button class="btn" onclick="clearManifest()">✕ 清除基准</button>
+        </div>
+        <textarea id="manifestIn" rows="5" placeholder="每行一条：SHA256值(64位hex)  文件名&#10;如 3ac9f1e...  payload.zip" style="margin-top:8px"></textarea>
+        <div class="progress" id="manifestStatus"></div>
+      </div>
 
-<!-- TAB: Compute -->
-<div id="tab-compute" class="tab-content active">
-  <div class="card">
-    <div class="card-title">选择文件（单文件 / 批量）</div>
-    <div class="card-desc">选择文件后立即计算 SHA-256（Web Crypto，256KiB 分块读取，全程本地，不上传）。</div>
-    <div class="file-drop" id="fileDrop">点击选择文件，或将文件拖到这里（支持多选）</div>
-    <input type="file" id="fileInput" multiple style="display:none;">
-    <div class="progress" id="progress"></div>
-    <div id="fileList" style="margin-top:10px;"></div>
-    <button id="startBtn" class="btn-primary" style="margin-top:10px;">开始计算哈希</button>
-  </div>
-</div>
-
-<!-- TAB: Manifest -->
-<div id="tab-manifest" class="tab-content">
-  <div class="card">
-    <div class="card-title">基准清单</div>
-    <div class="card-desc">导入既有清单作为对比基准；「导出清单」产物即可被 <span style="font-family:var(--font-mono);font-size:13px;">sha256sum -c</span> 直接复核（双空格格式，容忍单空格与 <span style="font-family:var(--font-mono);font-size:13px;">*</span> 前缀）。</div>
-    <label class="field-label" style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px;">导入清单文件</label>
-    <input type="file" id="manifestInput" accept=".txt,.sha256" style="font-size:13px;color:var(--text-secondary);background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-lg);padding:8px;width:100%;">
-    <label class="field-label" style="display:block;font-size:13px;color:var(--text-secondary);margin:14px 0 6px;">或粘贴清单文本（每行一条：SHA256值  文件名）</label>
-    <textarea id="manifestIn" rows="5" placeholder="3ac9f1e...  payload.zip"></textarea>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-      <button id="importManifestBtn" class="btn-secondary">粘贴导入</button>
-      <button id="clearManifestBtn" class="btn-secondary">清除基准</button>
-      <span id="manifestStatus" style="font-size:13px;color:var(--text-tertiary);align-self:center;"></span>
-    </div>
-  </div>
-</div>
-
-<!-- TAB: Baseline -->
-<div id="tab-baseline" class="tab-content">
-  <div class="card">
-    <div class="card-title">前后基线</div>
-    <div class="card-desc">粘贴操作前导出的清单为基线后重新计算，结果区会额外给出「与基线比」列 — 这就是文件前后哈希比较。</div>
-    <textarea id="baselineIn" rows="4" placeholder="粘贴操作前导出的清单（同 sha256sum 格式）"></textarea>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-      <button id="importBaselineBtn" class="btn-secondary">载入基线</button>
-      <button id="clearBaselineBtn" class="btn-secondary">清除基线</button>
-      <span id="baselineStatus" style="font-size:13px;color:var(--text-tertiary);align-self:center;"></span>
-    </div>
-  </div>
-</div>
-
-<!-- TAB: Result -->
-<div id="tab-result" class="tab-content">
-  <div class="card">
-    <div class="card-title">校验结果与前后对比</div>
-    <div class="card-desc">导入基准后，计算结果自动逐项比对；点击哈希值可复制。「前后对比」按文件名列匹配。</div>
-    <div id="summaryBox"></div>
-    <div id="resultBox"><div class="empty-state">尚未计算文件，结果将显示在这里</div></div>
-  </div>
-</div>
-
-<!-- TAB: CLI -->
-<div id="tab-cli" class="tab-content">
-  <div class="card">
-    <div class="card-title">本地版 / 命令行参考</div>
-    <div class="card-desc">Web 版受浏览器文件访问限制；目录批处理、GB 级大文件分块计算与离线清单复核请用下列命令（点击复制）。</div>
-    <div class="cli-label">生成清单并复核（Linux / Git Bash）：</div>
-    <pre class="cli-block" onclick="copyPre(this)">sha256sum ./* &gt; manifest.txt 2&gt;/dev/null
+      <div class="panel">
+        <div class="panel-head"><h2>🖥️ 本地版 / 命令行参考</h2><span class="hint">目录批处理 · 大文件分块 · 离线复核</span></div>
+        <div class="panel-desc">Web 版受浏览器文件访问限制；目录批处理、GB 级文件分块计算与离线清单复核请用下列命令（点击复制）。</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">生成清单并复核（Linux / Git Bash）：</div>
+        <pre class="cli mono" onclick="copyPre(this)">sha256sum ./* > manifest.txt 2>/dev/null
 sha256sum -c manifest.txt        # 不符会报 FAILED</pre>
-    <div class="cli-label">macOS 生成 / 目录批处理（GB 级大文件友好）：</div>
-    <pre class="cli-block" onclick="copyPre(this)">shasum -a 256 ./* &gt; manifest.txt
-find /path/to/dir -type f -exec sha256sum {} + &gt; manifest.txt</pre>
-    <div class="cli-label">前后对比：只重算清单中出现过的文件，diff 出差异：</div>
-    <pre class="cli-block" onclick="copyPre(this)">awk '{print $2}' manifest_old.txt | while read -r f; do
+        <div style="font-size:11px;color:var(--text-dim);margin:10px 0 6px">macOS 生成 / 目录批处理（GB 级大文件友好）：</div>
+        <pre class="cli mono" onclick="copyPre(this)">shasum -a 256 ./* > manifest.txt
+find /path/to/dir -type f -exec sha256sum {} + > manifest.txt</pre>
+        <div style="font-size:11px;color:var(--text-dim);margin:10px 0 6px">前后对比：只重算清单中出现过的文件，diff 出差异：</div>
+        <pre class="cli mono" onclick="copyPre(this)">awk '{print $2}' manifest_old.txt | while read -r f; do
   [ -f "$f" ] &amp;&amp; sha256sum "$f"
-done &gt; manifest_now.txt
+done > manifest_now.txt
 diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
+      </div>
+    </div>
+
+    <!-- ── 右栏：结果与对比 ── -->
+    <div class="col">
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><h2>🧮 校验结果与前后对比</h2><span class="hint">点击哈希值复制</span></div>
+        <div class="panel-desc">导入基准后，计算结果自动逐项比对；「前后对比」按文件名列匹配（支持拖拽两个版本的文件进左侧计算区）。</div>
+        <div id="summaryBox"></div>
+        <div id="resultBox"><div class="empty">尚未计算文件，结果将显示在这里</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>⏪ 前后基线</h2><span class="hint">操作前导出的清单即基线</span></div>
+        <div class="panel-desc">粘贴操作前导出的清单为基线后重新计算，结果区会额外给出「与基线比」列——这就是文件前后哈希比较。</div>
+        <textarea id="baselineIn" rows="4" placeholder="粘贴操作前导出的清单（同 sha256sum 格式）"></textarea>
+        <div class="btn-row">
+          <button class="btn" onclick="importBaselineFromText()">⏪ 载入基线</button>
+          <button class="btn" onclick="clearBaseline()">✕ 清除基线</button>
+          <span id="baselineStatus" style="font-size:11px;color:var(--text-dim)"></span>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-<div id="copyFeedback" class="feedback" style="position:sticky;bottom:16px;z-index:10;">已复制到剪贴板</div>
+  <div id="toast"></div>
 
-</div>
-
-<script>
-(function(){
+  <script>
+  // ═══ HashDock · 单文件应用（无依赖，file:// 直开）═══════════════
+  // 会话状态：items（本次计算结果）/ manifest（基准清单）/ baseline（前后对比基线）
   const STATE = {
-    items: {},
-    manifest: null,
-    baseline: null
+    items: {},      // name -> { hash, size, mtime }
+    manifest: null, // { name: hash }
+    baseline: null  // { name: hash }
   };
-  let lastComputed = [];
+  let lastComputed = []; // 最近一次计算的文件名（导出汇总用）
 
   // ─── 工具 ────────────────────────────────────────────────────────
-  function esc(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $ = id => document.getElementById(id);
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove('show'), 1800);
   }
-  function fmtSize(n){
-    if(n >= 1048576) return (n / 1048576).toFixed(2) + ' MB';
-    if(n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+  function copyText(s) {
+    navigator.clipboard.writeText(s).then(() => showToast('✅ 已复制到剪贴板'));
+  }
+  function copyPre(el) { copyText(el.textContent.trim()); }
+  function fmtSize(n) {
+    if (n >= 1048576) return (n / 1048576).toFixed(2) + ' MB';
+    if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
     return n + ' B';
-  }
-  function copyText(s){
-    navigator.clipboard.writeText(s).then(() => showFeedback()).catch(() => alert('复制失败，请手动复制'));
-  }
-  function copyPre(el){ copyText(el.textContent.trim()); }
-  function showFeedback(){
-    const fb = document.getElementById('copyFeedback');
-    fb.style.display = 'block';
-    setTimeout(() => fb.style.display = 'none', 2000);
   }
 
   // ─── SHA-256（Web Crypto · 256KiB 分块，大文件内存恒定）────────
-  async function fileSha256(file){
+  async function fileSha256(file) {
     const CHUNK = 256 * 1024;
     const parts = [];
-    for(let offset = 0; offset < file.size; offset += CHUNK){
+    for (let offset = 0; offset < file.size; offset += CHUNK) {
       parts.push(new Uint8Array(await file.slice(offset, offset + CHUNK).arrayBuffer()));
     }
     const buf = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
     let o = 0;
-    for(const p of parts){ buf.set(p, o); o += p.length; }
+    for (const p of parts) { buf.set(p, o); o += p.length; }
     const digest = await crypto.subtle.digest('SHA-256', buf);
     return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   // ─── 清单解析（sha256sum 双空格格式；容忍单空格与 * 前缀）────────
-  function parseManifest(text){
+  function parseManifest(text) {
     const map = {};
     text.split(/\r?\n/).forEach(line => {
       const m = line.match(/^(\*?)([0-9a-fA-F]{64})\s{1,2}(.+)$/);
-      if(m && m[1] !== '*') map[m[3].trim()] = m[2].toLowerCase();
+      if (m && m[1] !== '*') map[m[3].trim()] = m[2].toLowerCase();
     });
     return map;
   }
 
   // ─── 计算 ────────────────────────────────────────────────────────
-  const fileInput = document.getElementById('fileInput');
-  const fileDrop = document.getElementById('fileDrop');
-
-  fileDrop.addEventListener('click', () => fileInput.click());
-  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.style.borderColor = 'var(--text-primary)'; });
-  fileDrop.addEventListener('dragleave', () => { fileDrop.style.borderColor = ''; });
-  fileDrop.addEventListener('drop', e => {
-    e.preventDefault();
-    fileDrop.style.borderColor = '';
-    Array.from(e.dataTransfer.files).forEach(f => fileInputMimeFiles.add(f));
-    renderFileList();
-  });
-  fileInput.addEventListener('change', function(){
-    Array.from(this.files).forEach(f => fileInputMimeFiles.add(f));
-    this.value = '';
-    renderFileList();
-  });
-  const fileInputMimeFiles = new Set();
-
-  function renderFileList(){
-    const list = document.getElementById('fileList');
-    list.innerHTML = '';
-    fileInputMimeFiles.forEach(f => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-muted);margin-bottom:6px;font-size:13px;color:var(--text-secondary);';
-      row.innerHTML = '<span>' + esc(f.name) + ' <span style="color:var(--text-quaternary);">' + fmtSize(f.size) + '</span></span>';
-      const del = document.createElement('button');
-      del.textContent = '移除';
-      del.className = 'btn-secondary btn-small';
-      del.addEventListener('click', () => { fileInputMimeFiles.delete(f); renderFileList(); });
-      row.appendChild(del);
-      list.appendChild(row);
-    });
-  }
-
-  document.getElementById('startBtn').addEventListener('click', async function(){
-    const files = [...fileInputMimeFiles];
-    if(!files.length){ alert('请先选择文件'); return; }
+  async function startCompute() {
+    const files = [...$('fileInput').files];
+    if (!files.length) { showToast('⚠️ 请先选择文件'); return; }
     STATE.items = {};
-    document.getElementById('progress').textContent = '计算中 0 / ' + files.length + ' …';
-    for(let i = 0; i < files.length; i++){
+    $('progress').textContent = '⏳ 计算中 0 / ' + files.length + ' …';
+    for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      try{
+      try {
         const hash = await fileSha256(f);
         STATE.items[f.name] = { hash, size: f.size, mtime: f.lastModified };
-      } catch(e){
+      } catch (e) {
         STATE.items[f.name] = { error: e.message };
       }
-      document.getElementById('progress').textContent = '计算中 ' + (i + 1) + ' / ' + files.length + ' …';
+      $('progress').textContent = '⏳ 计算中 ' + (i + 1) / files.length + ' …';
       renderResults();
     }
     lastComputed = files.map(f => f.name);
-    document.getElementById('progress').textContent = '完成 ' + files.length + ' 个文件';
-    switchToTab('result');
-  });
+    $('progress').textContent = '✅ 完成 ' + files.length + ' 个文件';
+    showToast('✅ 已计算 ' + files.length + ' 个文件');
+  }
 
-  // ─── 清单导入 / 导出 ─────────────────────────────────────────────
-  document.getElementById('manifestInput').addEventListener('change', function(){
-    const f = this.files[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      document.getElementById('manifestIn').value = ev.target.result;
-      importManifestFromText();
-    };
-    reader.readAsText(f);
-    this.value = '';
-  });
-  document.getElementById('importManifestBtn').addEventListener('click', importManifestFromText);
-  document.getElementById('clearManifestBtn').addEventListener('click', clearManifest);
-
-  function importManifestFromText(){
-    const map = parseManifest(document.getElementById('manifestIn').value);
+  // ─── 导入 / 导出 ─────────────────────────────────────────────────
+  function importManifestFromText() {
+    const map = parseManifest($('manifestIn').value);
     STATE.manifest = map;
     const n = Object.keys(map).length;
-    document.getElementById('manifestStatus').textContent = n
-      ? '基准清单 ' + n + ' 条已载入'
-      : '未识别到「SHA256值  文件名」格式的行';
-    renderResults();
-  }
-  function clearManifest(){
-    STATE.manifest = null;
-    document.getElementById('manifestIn').value = '';
-    document.getElementById('manifestStatus').textContent = '';
+    $('manifestStatus').textContent = n
+      ? '📋 基准清单 ' + n + ' 条已载入'
+      : '⚠️ 未识别到「SHA256值  文件名」格式的行';
     renderResults();
   }
 
-  document.getElementById('importBaselineBtn').addEventListener('click', importBaselineFromText);
-  document.getElementById('clearBaselineBtn').addEventListener('click', clearBaseline);
-  function importBaselineFromText(){
-    const map = parseManifest(document.getElementById('baselineIn').value);
+  $('manifestInput').addEventListener('change', async () => {
+    if (!$('manifestInput').files.length) return;
+    const text = await $('manifestInput').files[0].text();
+    $('manifestIn').value = text;
+    importManifestFromText();
+  });
+
+  function clearManifest() {
+    STATE.manifest = null;
+    $('manifestIn').value = '';
+    $('manifestStatus').textContent = '';
+    renderResults();
+  }
+
+  function importBaselineFromText() {
+    const map = parseManifest($('baselineIn').value);
     STATE.baseline = map;
     const n = Object.keys(map).length;
-    document.getElementById('baselineStatus').textContent = n ? '基线 ' + n + ' 条已载入' : '未识别到有效基线行';
+    $('baselineStatus').textContent = n ? '⏪ 基线 ' + n + ' 条已载入' : '⚠️ 未识别到有效基线行';
     renderResults();
   }
-  function clearBaseline(){
+
+  function clearBaseline() {
     STATE.baseline = null;
-    document.getElementById('baselineIn').value = '';
-    document.getElementById('baselineStatus').textContent = '';
+    $('baselineIn').value = '';
+    $('baselineStatus').textContent = '';
     renderResults();
   }
 
-  document.getElementById('exportManifestBtn').addEventListener('click', exportManifest);
-  document.getElementById('exportSummaryBtn').addEventListener('click', exportSummary);
-
-  function exportManifest(){
+  function exportManifest() {
     const lines = Object.entries(STATE.items).filter(([, v]) => v.hash)
       .map(([k, v]) => v.hash.toUpperCase() + '  ' + k);
-    if(!lines.length){ alert('尚无可导出的哈希'); return; }
+    if (!lines.length) { showToast('⚠️ 尚无可导出的哈希'); return; }
     download(lines.join('\n') + '\n', 'sha256-manifest.txt', 'text/plain');
+    showToast('📦 清单已导出（可用 sha256sum -c 复核）');
   }
 
-  function exportSummary(){
+  function exportSummary() {
     const names = lastComputed.length ? lastComputed : Object.keys(STATE.items);
-    if(!names.length){ alert('尚无结果可导出'); return; }
+    if (!names.length) { showToast('⚠️ 尚无结果可导出'); return; }
     const ref = STATE.manifest;
     const lines = ['# HashDock 校验汇总', '生成时间: ' + new Date().toLocaleString('zh-CN', { hour12: false })];
     names.forEach(name => {
       const v = STATE.items[name];
-      if(!v || !v.hash){ lines.push(['计算失败', '-', name].join('\t')); return; }
+      if (!v || !v.hash) { lines.push(['计算失败', '-', name].join('\t')); return; }
       let st = '未对比';
-      if(ref) st = (name in ref) ? (ref[name] === v.hash ? '与基准一致' : '与基准不一致') : '基准中缺失';
-      if(STATE.baseline && name in STATE.baseline){
+      if (ref) st = (name in ref) ? (ref[name] === v.hash ? '与基准一致' : '与基准不一致') : '基准中缺失';
+      if (STATE.baseline && name in STATE.baseline) {
         st += (STATE.baseline[name] === v.hash) ? ' / 与基线一致' : ' / 与基线不一致';
       }
       lines.push([st, v.hash, name, fmtSize(v.size)].join('\t'));
     });
     download(lines.join('\n') + '\n', 'hashdock-summary.tsv', 'text/tab-separated-values');
+    showToast('🧮 汇总 TSV 已导出');
   }
 
-  function download(content, filename, mime){
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
+  function download(text, filename, mime) {
     const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+    a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
 
   // ─── 渲染 ────────────────────────────────────────────────────────
-  function renderResults(){
+  function renderResults() {
     const entries = Object.entries(STATE.items);
     const ref = STATE.manifest, base = STATE.baseline;
-    const resultBox = document.getElementById('resultBox');
-    const summaryBox = document.getElementById('summaryBox');
 
-    if(!entries.length){
-      summaryBox.innerHTML = '';
-      resultBox.innerHTML = '<div class="empty-state">尚未计算文件，结果将显示在这里</div>';
+    if (!entries.length) {
+      $('resultBox').innerHTML = '<div class="empty">尚未计算文件，结果将显示在这里</div>';
+      $('summaryBox').innerHTML = '';
       return;
     }
 
-    let okC = 0, badC = 0, missC = 0, errC = 0, baseBad = 0;
+    let okC = 0, badC = 0, missC = 0, errC = 0, baseBad = 0, baseOk = 0;
     const rows = entries.map(([name, v]) => {
       let mRef = '<span class="st-none">—</span>', mBase = '<span class="st-none">—</span>';
-      if(v.error){
+      if (v.error) {
         errC++;
-        mRef = mBase = '<span class="st-bad" title="' + esc(v.error) + '">❌ 计算失败</span>';
+        mRef = mBase = '<span class="st-bad" title="' + v.error + '">❌ 计算失败</span>';
       } else {
-        if(ref){
-          if(!(name in ref)){ missC++; mRef = '<span class="st-miss">🔍 基准缺失</span>'; }
-          else if(ref[name] === v.hash){ okC++; mRef = '<span class="st-ok">✔ 一致</span>'; }
+        if (ref) {
+          if (!(name in ref)) { missC++; mRef = '<span class="st-miss">🔍 基准缺失</span>'; }
+          else if (ref[name] === v.hash) { okC++; mRef = '<span class="st-ok">✔ 一致</span>'; }
           else { badC++; mRef = '<span class="st-bad">✘ 不一致</span>'; }
         }
-        if(base){
-          if(!(name in base)) mBase = '<span class="st-miss">🔍 基线缺失</span>';
-          else if(base[name] === v.hash) mBase = '<span class="st-ok">✔ 一致</span>';
+        if (base) {
+          if (!(name in base)) { mBase = '<span class="st-miss">🔍 基线缺失</span>'; }
+          else if (base[name] === v.hash) { baseOk++; mBase = '<span class="st-ok">✔ 一致</span>'; }
           else { baseBad++; mBase = '<span class="st-bad">✘ 变更</span>'; }
         }
       }
       return '<tr>'
-        + '<td>' + esc(name) + '</td>'
-        + '<td class="hash" title="点击复制" onclick="window.__copyHash(this)">' + (v.hash || '-') + '</td>'
+        + '<td>' + name.replace(/</g, '&lt;') + '</td>'
+        + '<td class="mono hash" title="点击复制" onclick="copyText(this.textContent)">' + (v.hash || '-') + '</td>'
         + '<td>' + (v.error ? '-' : fmtSize(v.size)) + '</td>'
         + (ref ? '<td>' + mRef + '</td>' : '')
         + (base ? '<td>' + mBase + '</td>' : '')
@@ -400,42 +410,26 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
       + (ref ? '<th>vs 基准</th>' : '')
       + (base ? '<th>vs 基线（前后）</th>' : '')
       + '</tr>';
-    resultBox.innerHTML =
-      '<div class="results-table-wrap"><table class="results-table"><thead>' + head + '</thead><tbody>'
-      + rows.join('') + '</tbody></table></div>';
+    let table = '<table class="results"><thead>' + head + '</thead><tbody>' + rows.join('') + '</tbody></table>';
 
-    let stats = '';
-    if(!ref && !base){
-      stats = '<div class="summary"><div class="stat"><b>' + entries.length + '</b><span>已计算（未设基准 / 基线）</span></div></div>';
+    const stats = '<div class="summary">'
+      + '<div class="stat stat-s"><b class="b">' + okC + '</b><span>与基准一致</span></div>'
+      + '<div class="stat stat-b"><b class="b">' + badC + '</b><span>与基准不一致</span></div>'
+      + (base ? '<div class="stat stat-b"><b class="b">' + baseBad + '</b><span>较基线变更</span></div>' : '')
+      + '<div class="stat stat-m"><b class="b">' + missC + '</b><span>基准中缺失</span></div>'
+      + '<div class="stat stat-b"><b class="b">' + errC + '</b><span>计算失败</span></div>'
+      + '</div>';
+    if (!ref && !base) {
+      $('summaryBox').innerHTML = '<div class="summary"><div class="stat"><b>' + entries.length + '</b><span>已计算（未设基准 / 基线）</span></div></div>';
     } else {
-      stats = '<div class="summary">'
-        + stat(okC, 'ok', '与基准一致')
-        + stat(badC, 'bad', '与基准不一致')
-        + (base ? stat(baseBad, 'bad', '较基线变更') : '')
-        + stat(missC, 'miss', '基准中缺失')
-        + stat(errC, 'err', '计算失败')
-        + '</div>';
+      $('summaryBox').innerHTML = stats;
     }
-    summaryBox.innerHTML = stats;
+    $('resultBox').innerHTML = table;
   }
-  function stat(n, cls, label){
-    return '<div class="stat stat-' + cls + '"><b>' + n + '</b><span>' + label + '</span></div>';
-  }
-  window.__copyHash = function(el){
-    copyText(el.textContent);
-  };
 
-  function switchToTab(name){
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    const btn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
-    if(btn) btn.classList.add('active');
-    document.getElementById('tab-' + name).classList.add('active');
-  }
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
-  });
-})();
-</script>
+  // ─── 主题：DataForge 中性浅色配色（无暗色切换）────────────────
+
+  $('fileInput').addEventListener('change', () => { renderResults(); });
+  </script>
 </body>
 </html>
