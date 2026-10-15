@@ -262,13 +262,44 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
   }
 
   // ─── 清单解析（sha256sum 双空格格式；容忍单空格与 * 前缀）────────
+  // 也接受「裸 64 位哈希」整段文本（如从结果表复制的哈希值、终端直接输出的
+  // 纯哈希值），归入合成键 '__pasted'，对比时按「任一值命中」放行。
+  const PASTED_KEY = '__pasted';
   function parseManifest(text) {
     const map = {};
+    const bare = [];
     text.split(/\r?\n/).forEach(line => {
-      const m = line.match(/^(\*?)([0-9a-fA-F]{64})\s{1,2}(.+)$/);
-      if (m && m[1] !== '*') map[m[3].trim()] = m[2].toLowerCase();
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const m = trimmed.match(/^(\*?)([0-9a-fA-F]{64})(?:\s{1,2}(.+))?$/);
+      if (m && m[1] !== '*') {
+        if (m[3]) map[m[3].trim()] = m[2].toLowerCase();
+        else bare.push(m[2].toLowerCase());
+      }
     });
+    const bareSet = [...new Set(bare)];
+    if (bareSet.length) map[PASTED_KEY] = bareSet;
     return map;
+  }
+
+  // 基准匹配：合成键按「任一值命中」；普通条目按严格相等。
+  function matchRef(ref, name, hash, refSet) {
+    if (!(name in ref)) {
+      if (refSet && refSet.has(hash.toLowerCase())) return 'ok';
+      return 'miss';
+    }
+    const val = ref[name];
+    if (Array.isArray(val)) return val.includes(hash.toLowerCase()) ? 'ok' : 'bad';
+    return val === hash.toLowerCase() ? 'ok' : 'bad';
+  }
+
+  function manifestSet(ref) {
+    const set = new Set();
+    Object.values(ref).forEach(v => {
+      if (Array.isArray(v)) v.forEach(x => set.add(x));
+      else if (typeof v === 'string' && v !== PASTED_KEY) set.add(v);
+    });
+    return set;
   }
 
   // ─── 计算 ────────────────────────────────────────────────────────
@@ -334,7 +365,8 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
   }
 
   function exportManifest() {
-    const lines = Object.entries(STATE.items).filter(([, v]) => v.hash)
+    const lines = Object.entries(STATE.items)
+      .filter(([k]) => k !== PASTED_KEY && STATE.items[k].hash)
       .map(([k, v]) => v.hash.toUpperCase() + '  ' + k);
     if (!lines.length) { showToast('⚠️ 尚无可导出的哈希'); return; }
     download(lines.join('\n') + '\n', 'sha256-manifest.txt', 'text/plain');
@@ -345,12 +377,13 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
     const names = lastComputed.length ? lastComputed : Object.keys(STATE.items);
     if (!names.length) { showToast('⚠️ 尚无结果可导出'); return; }
     const ref = STATE.manifest;
+    const refSet = ref ? manifestSet(ref) : null;
     const lines = ['# HashDock 校验汇总', '生成时间: ' + new Date().toLocaleString('zh-CN', { hour12: false })];
     names.forEach(name => {
       const v = STATE.items[name];
       if (!v || !v.hash) { lines.push(['计算失败', '-', name].join('\t')); return; }
       let st = '未对比';
-      if (ref) st = (name in ref) ? (ref[name] === v.hash ? '与基准一致' : '与基准不一致') : '基准中缺失';
+      if (ref) st = (matchRef(ref, name, v.hash, refSet) === 'ok') ? '与基准一致' : (matchRef(ref, name, v.hash, refSet) === 'miss') ? '基准中缺失' : '与基准不一致';
       if (STATE.baseline && name in STATE.baseline) {
         st += (STATE.baseline[name] === v.hash) ? ' / 与基线一致' : ' / 与基线不一致';
       }
@@ -380,6 +413,7 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
     }
 
     let okC = 0, badC = 0, missC = 0, errC = 0, baseBad = 0, baseOk = 0;
+    const refSet = ref ? manifestSet(ref) : null;
     const rows = entries.map(([name, v]) => {
       let mRef = '<span class="st-none">—</span>', mBase = '<span class="st-none">—</span>';
       if (v.error) {
@@ -387,8 +421,9 @@ diff manifest_old.txt manifest_now.txt   # 有输出即存在变更</pre>
         mRef = mBase = '<span class="st-bad" title="' + v.error + '">❌ 计算失败</span>';
       } else {
         if (ref) {
-          if (!(name in ref)) { missC++; mRef = '<span class="st-miss">🔍 基准缺失</span>'; }
-          else if (ref[name] === v.hash) { okC++; mRef = '<span class="st-ok">✔ 一致</span>'; }
+          const r = matchRef(ref, name, v.hash, refSet);
+          if (r === 'miss') { missC++; mRef = '<span class="st-miss">🔍 基准缺失</span>'; }
+          else if (r === 'ok') { okC++; mRef = '<span class="st-ok">✔ 一致</span>'; }
           else { badC++; mRef = '<span class="st-bad">✘ 不一致</span>'; }
         }
         if (base) {
